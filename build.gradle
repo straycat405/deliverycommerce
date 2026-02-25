@@ -63,3 +63,18 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+// QueryDSL Q Class 빌드
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
+
+sourceSets {
+	main.java.srcDirs += [querydslDir]
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.getGeneratedSourceOutputDirectory().set(querydslDir)
+}
+
+clean.doLast {
+	querydslDir.deleteDir()
+}

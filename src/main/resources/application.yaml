@@ -1,3 +1,35 @@
+# application.yml
+# 로컬 : localhost (docker-compose)
+# AWS EC2 : RDS endpoint, ElastiCache endpoint 환경변수로 주입
+
 spring:
   application:
     name: deliverycommerce
+
+  # PostgreSQL
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:deliverycommerce}
+    username: ${DB_USERNAME:babjo}
+    password: ${DB_PASSWORD:babjo1234}
+    driver-class-name: org.postgresql.Driver
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: 900000 # 15분
+  refresh-expiration: 604800000 # 7일

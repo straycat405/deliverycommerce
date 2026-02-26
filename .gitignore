@@ -1,23 +1,4 @@
 # ===========================
-# Java
-# ===========================
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-hs_err_pid*
-
-# ===========================
-# Gradle
-# ===========================
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# ===========================
 # IntelliJ IDEA
 # ===========================
 .idea/
@@ -29,10 +10,10 @@ out/
 !**/src/test/**/out/
 
 # ===========================
-# Spring Boot
+# Spring Boot / Gradle
 # ===========================
-docs/HELP.md
 /build/
+/.gradle/
 
 # ===========================
 # 환경변수
@@ -66,7 +47,7 @@ Desktop.ini
 logs/
 
 # ===========================
-# docs
+# Local docs / misc
 # ===========================
 CLAUDE.md
 docs/PROGRESS.md
@@ -74,4 +55,3 @@ EC2_ENV_SETUP.md
 docs/COMMON_LOGIC_GUIDE.md
 .claude/
 dump.rdb
-docs/

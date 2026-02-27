@@ -51,7 +51,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/{reviewId}")
-    public void deleteReview(@PathVariable Long reviewId) {
-
+    public void deleteReview(@PathVariable UUID reviewId) {
+        reviewService.deleteReview(reviewId);
     }
 }

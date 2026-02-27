@@ -65,6 +65,19 @@ public class ReviewService {
         return reviewMapper.toCreateResponse(savedReview);
     }
 
+    public void deleteReview(UUID reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
+        // if (!review.getUser().getId().equals(userId)) {
+        //     throw new RuntimeException("Unauthorized: not the author");
+        // }
+
+        // [TODO] 인증 연결 후 실제 userId 전달
+        review.delete(null);
+    }
+
     public ReviewUpdateResponse updateReview(
 //            Long userId,
             UUID reviewId,

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.crypto.SecretKey;
-import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
 
@@ -92,16 +91,46 @@ public class JwtUtil {
 
 
     /**
-     * 토큰에서 Claims(payload 전체) 추출
-     * userId, username, role
+     * Claims 추출 — 필터에서 사용
      */
     public Claims getUserInfoFromToken(String token) {
+        return parseToken(token);
+    }
+
+    /**
+     * 유효성 검사 — 재발급 등 별도 분기 필요 시 사용
+     */
+    public boolean validateToken(String token) {
+        parseToken(token); // 예외 안 나면 유효한 것
+        return true;
+    }
+
+    /**
+     * Access Token 남은 만료시간 반환 (ms)
+     */
+    public long getRemainExpiration(String token) {
+        return parseToken(token).getExpiration().getTime() - new Date().getTime();
+    }
+    /**
+     * Refresh Token 만료시간 반환 (ms)
+     * Controller에서 Cookie maxAge 세팅 시 사용
+     * maxAge는 초 단위이므로 / 1000 변환 필요
+     */
+    public long getRefreshExpiration() {
+        return jwtRefreshExpiration;
+    }
+
+    /**
+     * 공통 파싱 메서드 — 내부 전용
+     * 만료 / 위변조 / 미지원 모두 CustomException으로 변환
+     */
+    private Claims parseToken(String token) {
         try {
             return Jwts.parser()
                     .verifyWith(key)
                     .build()
                     .parseSignedClaims(token)
-                    .getPayload(); // getBody() → getPayload()
+                    .getPayload();
         } catch (ExpiredJwtException e) {
             log.error("만료된 JWT 토큰입니다.", e);
             throw new CustomException(ErrorCode.EXPIRED_TOKEN);
@@ -109,42 +138,6 @@ public class JwtUtil {
             log.error("유효하지 않은 JWT 서명입니다.", e);
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         } catch (UnsupportedJwtException | IllegalArgumentException e) {
-            log.error("지원하지 않는 JWT 토큰입니다.", e);
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
-        }
-
-    }
-
-    /**
-     * 토큰 남은 만료시간 반환 (ms단위)
-     * 로그아웃 시 Redis Blaclist TTL 계산에 사용
-     */
-    public long getRemainExpiration(String token) {
-        Claims claims = getUserInfoFromToken(token);
-        return claims.getExpiration().getTime() - new Date().getTime();
-    }
-
-    /**
-     * 토큰 유효성 검사
-     * 만료 / 위변조 / 미지원 형식을 구분해서 CustomException으로 던짐
-     * GlobalExceptionHandler가 자동으로 잡아서 응답 처리
-     * 재발급 등 만료 여부를 별도로 구분해야 하는 케이스에서 사용
-     * 일반 인가 필터는 getUserInfoFromToken() 사용
-     */
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().verifyWith(key).build().parseSignedClaims(token);
-            return true;
-        } catch (ExpiredJwtException e) {
-            // 만료 - 재발급 로직에서 구분 처리
-            log.error("만료된 JWT 토큰입니다.", e);
-            throw new CustomException(ErrorCode.EXPIRED_TOKEN);
-        } catch (SecurityException | MalformedJwtException e) {
-            // 서명 불일치 또는 토큰 구조 손상
-            log.error("유효하지 않은 JWT 서명입니다.", e);
-            throw new CustomException(ErrorCode.INVALID_TOKEN);
-        } catch (UnsupportedJwtException | IllegalArgumentException e) {
-            // 지원하지 않는 형식 또는 빈 값
             log.error("지원하지 않는 JWT 토큰입니다.", e);
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }

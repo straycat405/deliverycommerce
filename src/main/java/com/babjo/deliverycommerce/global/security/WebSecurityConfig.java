@@ -45,12 +45,14 @@ package com.babjo.deliverycommerce.global.security;
  *   Security 설정 직접 수정 금지, 변경 필요시 문의 바랍니다.
  */
 
-import com.babjo.deliverycommerce.global.jwt.*;
+import com.babjo.deliverycommerce.global.jwt.JwtAccessDeniedHandler;
+import com.babjo.deliverycommerce.global.jwt.JwtAuthenticationEntryPoint;
+import com.babjo.deliverycommerce.global.jwt.JwtAuthorizationFilter;
+import com.babjo.deliverycommerce.global.jwt.JwtUtil;
+import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -71,28 +73,12 @@ public class WebSecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
-    private final AuthenticationConfiguration authenticationConfiguration;
-
-    // AuthenticationManager 빈 등록
-    // JwtAuthenticationFilter 생성자에 주입하기 위해 필요
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
-    }
-
-    // JwtAuthenticationFilter는 @Component가 아니므로 직접 빈으로 등록
-    // AuthenticationManager를 수동으로 주입해줘야 함
-    @Bean
-    public JwtAuthenticationFilter jwtAuthenticationFilter() throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil);
-        filter.setAuthenticationManager(authenticationManager(authenticationConfiguration));
-        return filter;
-    }
+    private final RedisUtil redisUtil;
 
     // JwtAuthorizationFilter도 @Component가 아니므로 직접 빈으로 등록
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, userDetailsService);
+        return new JwtAuthorizationFilter(jwtUtil, userDetailsService, redisUtil);
     }
 
     @Bean
@@ -120,8 +106,7 @@ public class WebSecurityConfig {
                 // 필터 실행 순서:
                 // JwtAuthorizationFilter → JwtAuthenticationFilter → UsernamePasswordAuthenticationFilter
                 // 토큰 검증을 먼저 수행하고, 로그인 요청은 JwtAuthenticationFilter가 처리
-                .addFilterBefore(jwtAuthorizationFilter(), JwtAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

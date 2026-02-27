@@ -38,9 +38,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ApiResponse<?>> handleCustomException(CustomException e) {
         log.warn("[CustomException] code={}, message={}", e.getErrorCode().getCode(), e.getMessage());
-        return ResponseEntity
-                .status(e.getErrorCode().getStatus())
-                .body(ApiResponse.error(e.getErrorCode()));
+        // 내부 status와 HTTP status를 한 번에 해결
+        return ApiResponse.error(e.getErrorCode());
     }
 
     // @Valid 유효성 검사 실패
@@ -50,22 +49,19 @@ public class GlobalExceptionHandler {
                 .getFieldErrors()
                 .stream()
                 .findFirst()
-                .map(FieldError::getDefaultMessage)  // DTO @Pattern message가 여기서 올라온다
-                .orElse(ErrorCode.INVALID_INPUT.getMessage()); // fallback도 enum에서 가져옴
+                .map(FieldError::getDefaultMessage)
+                .orElse(ErrorCode.INVALID_INPUT.getMessage());
 
         log.warn("[ValidationException] message={}", message);
 
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ErrorCode.INVALID_INPUT, message)); // 동적 메세지 주입
+        // ResponseEntity.status().body()를 생략하고 바로 반환
+        return ApiResponse.error(ErrorCode.INVALID_INPUT, message);
     }
-
     // 나머지 예상 못한 예외상황
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> unhandledException(Exception e) {
         log.error("[UnhandledException]", e);
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR));
+        // 여기서도 ApiResponse.error()만 사용
+        return ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }

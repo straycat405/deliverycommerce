@@ -33,6 +33,7 @@ public class UserService {
     private final RedisUtil redisUtil;
 
     // 회원가입
+    @Transactional
     public SignupResponseDto signup(SignupRequestDto dto) {
 
         // 비밀번호 / 비밀번호 확인 일치 검사

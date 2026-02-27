@@ -5,8 +5,10 @@ import com.babjo.deliverycommerce.domain.store.dto.StoreCreateRequestDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.service.StoreService;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -44,7 +46,7 @@ public class StoreController {
         log.info("[StoreController] get 요청: storeId={}", storeId);
 
         StoreResponseDto result = storeService.get(storeId);
-        log.info("[StoreController] get 성공: storeId={}", result.getStoreId());
+        log.info("[StoreController] get 성공: storeId={}", storeId);
 
         return result;
     }

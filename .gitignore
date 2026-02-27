@@ -72,3 +72,5 @@ CLAUDE.md
 PROGRESS.md
 EC2_ENV_SETUP.md
 COMMON_LOGIC_GUIDE.md
+.claude/
+dump.rdb

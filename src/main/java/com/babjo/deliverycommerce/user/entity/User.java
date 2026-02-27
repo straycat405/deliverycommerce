@@ -78,4 +78,25 @@ public class User extends BaseEntity {
     @Enumerated(value = EnumType.STRING)
     private UserEnumRole role;
 
+    // 테스트용 목업
+    public static User createForTest(Long userId, String username, String email,
+                                     String nickname, UserEnumRole role) {
+        User user = User.builder()
+                .username(username)
+                .password("encoded")
+                .email(email)
+                .nickname(nickname)
+                .role(role)
+                .build();
+        // 리플렉션으로 userId 주입
+        try {
+            var field = User.class.getDeclaredField("userId");
+            field.setAccessible(true);
+            field.set(user, userId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return user;
+    }
+
 }

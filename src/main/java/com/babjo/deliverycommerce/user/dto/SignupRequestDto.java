@@ -3,8 +3,11 @@ package com.babjo.deliverycommerce.user.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Builder;
 import lombok.Getter;
 
+// 테스트를 위한 @Builder 설정
+@Builder
 @Getter
 public class SignupRequestDto {
 

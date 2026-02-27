@@ -1,6 +1,6 @@
 package com.babjo.deliverycommerce.domain.store.entity;
 
-import com.babjo.deliverycommerce.global.entity.BaseEntity;
+import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,19 +39,16 @@ public class Store extends BaseEntity {
     @Column(name = "review_count", nullable = false)
     private Integer reviewCount = 0;
 
-
     public static Store create(Long ownerId, String category, String name, String address) {
         Store store = new Store();
         store.ownerId = ownerId;
         store.category = category;
         store.name = name;
         store.address = address;
-
-        store.markCreatedBy(ownerId);
         return store;
     }
 
-    public void update(String category, String name, String address, Long actorUserId) {
+    public void update(String category, String name, String address) {
         if (category != null) {
             this.category = category;
         }
@@ -61,8 +58,5 @@ public class Store extends BaseEntity {
         if (address != null) {
             this.address = address;
         }
-
-
-        this.markUpdatedBy(actorUserId);
     }
 }

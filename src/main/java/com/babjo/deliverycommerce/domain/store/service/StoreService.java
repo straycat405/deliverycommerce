@@ -24,7 +24,7 @@ public class StoreService {
         this.storeRepository = storeRepository;
     }
 
-    /* POST /v1/stores  가게 등록*/
+    /* POST /v1/stores 가게 등록 */
     public StoreResponseDto create(Long ownerId, StoreCreateRequestDto request) {
         log.info("Store create requested. ownerId={}", ownerId);
 
@@ -41,33 +41,42 @@ public class StoreService {
         return StoreResponseDto.from(saved);
     }
 
-    /*GET /v1/stores/{storeId} 가게 단건 조회*/
+    /* GET /v1/stores/{storeId} 가게 단건 조회 */
     @Transactional(readOnly = true)
     public StoreResponseDto get(UUID storeId) {
         Store store = findActiveStore(storeId);
         return StoreResponseDto.from(store);
     }
 
-    /*PATCH /v1/stores/{storeId} 가게 수정 (주인)
-     * actorUserId (지금 요청을 실행하는 사람(로그인한 유저ID)
-     * ownerId와 actorUserId 비교 후 같으면 허용 아니면 거부*/
+    /* PATCH /v1/stores/{storeId} 가게 수정 (주인만 가능) */
     public StoreResponseDto update(UUID storeId, Long actorUserId, StoreUpdateRequestDto request) {
         log.info("Store update requested. storeId={} actorUserId={}", storeId, actorUserId);
 
         Store store = findActiveStore(storeId);
+        validateOwner(store, actorUserId);
 
         store.update(
                 request.getCategory(),
                 request.getName(),
-                request.getAddress(),
-                actorUserId
+                request.getAddress()
         );
 
         log.info("Store updated. storeId={} actorUserId={}", store.getStoreId(), actorUserId);
         return StoreResponseDto.from(store);
     }
 
-    /*공통함수404*/
+    /* DELETE /v1/stores/{storeId} 가게 삭제 */
+    public void delete(UUID storeId, Long actorUserId) {
+        log.info("Store delete requested. storeId={} actorUserId={}", storeId, actorUserId);
+
+        Store store = findActiveStore(storeId);
+        validateOwner(store, actorUserId);
+        store.delete(actorUserId);
+
+        log.info("Store deleted. storeId={} actorUserId={}", store.getStoreId(), actorUserId);
+    }
+
+    /* 공통 조회 함수 */
     private Store findActiveStore(UUID storeId) {
         return storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)
                 .orElseThrow(() -> {
@@ -76,23 +85,12 @@ public class StoreService {
                 });
     }
 
-    /*DELETE /v1/stores/{storeId} 가게 삭제*/
-    public void delete(UUID storeId, Long actorUserId) {
-        log.info("Store delete requested. storeId={} actorUserId={}", storeId, actorUserId);
-
-        Store store = findActiveStore(storeId);
-        store.softDelete(actorUserId);
-
-        log.info("Store deleted. storeId={} actorUserId={}", store.getStoreId(), actorUserId);
-    }
-
     private void validateOwner(Store store, Long actorUserId) {
         if (!store.getOwnerId().equals(actorUserId)) {
-            log.warn("Store owner mismatch. storeId={} ownerId={} actorUserId={}", store.getStoreId(), store.getOwnerId(), actorUserId);
+            log.warn("Store owner mismatch. storeId={} ownerId={} actorUserId={}",
+                    store.getStoreId(), store.getOwnerId(), actorUserId);
 
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not store owner");
         }
     }
-
-
 }

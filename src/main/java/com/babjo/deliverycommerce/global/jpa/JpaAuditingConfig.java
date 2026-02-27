@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.global.config;
+package com.babjo.deliverycommerce.global.jpa;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

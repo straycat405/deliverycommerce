@@ -26,6 +26,9 @@ repositories {
 
 dependencies {
 
+	// p6spy (파라미터 바인딩 쿼리 출력 로그)
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
+
 	// Redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 	implementation 'org.springframework.session:spring-session-data-redis'

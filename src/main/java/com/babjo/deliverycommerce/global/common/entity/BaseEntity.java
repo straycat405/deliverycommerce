@@ -22,7 +22,7 @@ public abstract class BaseEntity {
     private LocalDateTime createdAt;
 
     @CreatedBy
-    @Column(updatable = false)
+    @Column
     private Long createdBy;         // 생성자 p_user.user_id
 
     @LastModifiedDate
@@ -39,10 +39,10 @@ public abstract class BaseEntity {
     @Column
     private Long deletedBy;         // 삭제자 user_id
 
-    /**
-     *     Soft Delete 처리 메서드 (레코드를 지우지 않고 시간 삽입
-     *     탈퇴 계정 조회가 필요할 경우 BaseEntity.isDeleted()로 판별
-      */
+    // 회원가입시 createdBy 후처리 목적
+    public void initCreatedBy(Long userId) {
+        this.createdBy = userId;
+    }
 
     public void delete(Long deletedByUserId) {
         this.deletedAt = LocalDateTime.now();

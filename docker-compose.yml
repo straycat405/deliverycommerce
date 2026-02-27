@@ -1,0 +1,28 @@
+# docker-compose.yml (로컬 개발용)
+# RDS/ELastiCache는 Docker로 띄우지 않습니다
+
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: deliverycommerce-postgres
+    environment:
+      POSTGRES_DB: deliverycommerce
+      POSTGRES_USER: babjo
+      POSTGRES_PASSWORD: babjo1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data # 컨테이너 내려도 데이터 유지
+
+  redis:
+    image: redis:7
+    container_name: deliverycommerce-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+volumes:
+  postgres-data:
+  redis-data:

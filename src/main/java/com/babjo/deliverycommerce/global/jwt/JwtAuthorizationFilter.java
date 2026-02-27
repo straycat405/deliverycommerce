@@ -1,9 +1,12 @@
 package com.babjo.deliverycommerce.global.jwt;
 
+import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
 import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,11 +30,16 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    // Filter는 DispatcherServlet 이전에 동작
+    // 따라서 @ExceptionHandler로 처리 불가능
+    // ObjectMapper를 주입받아 ApiResponse 객체를 JSON으로 변환하는 방식으로 활용
+    private final ObjectMapper objectMapper;
 
     // UserDetailsServiceImpl 제거 — DB 조회 안 하므로 불필요
-    public JwtAuthorizationFilter(JwtUtil jwtUtil, RedisUtil redisUtil) {
+    public JwtAuthorizationFilter(JwtUtil jwtUtil, RedisUtil redisUtil,  ObjectMapper objectMapper) {
         this.jwtUtil = jwtUtil;
         this.redisUtil = redisUtil;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -53,7 +61,13 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             // Blacklist 체크 - 로그아웃된 토큰 차단
             if (redisUtil.hasKey(RedisKeys.blacklistKey(tokenValue))) {
                 log.warn("[JWT] 블랙리스트 토큰 차단");
-                filterChain.doFilter(req, res);
+
+                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                res.setContentType("application/json;charset=UTF-8");
+                //ApiResponse 형식으로 변환
+                res.getWriter().write(
+                        objectMapper.writeValueAsString(ApiResponse.errorBody(ErrorCode.TOKEN_BLACKLISTED))
+                );
                 return;
             }
 
@@ -68,8 +82,23 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
             // 만료 / 위변조 등 → SecurityContext 비워둔 채 진행
             // EntryPoint가 401 응답 처리
             log.error("[JWT] code={}, message={}", e.getErrorCode().getCode(), e.getMessage());
+
+            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            res.setContentType("application/json;charset=UTF-8");
+            res.getWriter().write(
+                    objectMapper.writeValueAsString(ApiResponse.errorBody(e.getErrorCode()))
+            );
+            return;  // filterChain.doFilter() 호출 안 함
+
         } catch (Exception e) {
             log.error("[JWT] 알 수 없는 오류", e);
+
+            res.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            res.setContentType("application/json;charset=UTF-8");
+            res.getWriter().write(
+                    objectMapper.writeValueAsString(ApiResponse.errorBody(ErrorCode.INTERNAL_SERVER_ERROR))
+            );
+            return;
         }
 
         filterChain.doFilter(req, res);

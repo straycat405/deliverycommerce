@@ -84,4 +84,14 @@ public class ApiResponse<T> {
                 .status(errorCode.getStatus())
                 .body(new ApiResponse<>(errorCode.getStatus().value(), errorCode.getCode(), message, null));
     }
+
+    // ── Filter용 (ResponseEntity 없이 객체만 반환) ────────────────────
+    public static ApiResponse<?> errorBody(ErrorCode errorCode) {
+        return new ApiResponse<>(
+                errorCode.getStatus().value(),
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                null
+        );
+    }
 }

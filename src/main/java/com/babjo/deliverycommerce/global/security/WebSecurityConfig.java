@@ -50,6 +50,7 @@ import com.babjo.deliverycommerce.global.jwt.JwtAuthenticationEntryPoint;
 import com.babjo.deliverycommerce.global.jwt.JwtAuthorizationFilter;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -74,11 +75,12 @@ public class WebSecurityConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final RedisUtil redisUtil;
+    private final ObjectMapper objectMapper;
 
     // JwtAuthorizationFilter도 @Component가 아니므로 직접 빈으로 등록
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, redisUtil);
+        return new JwtAuthorizationFilter(jwtUtil, redisUtil, objectMapper);
     }
 
     @Bean

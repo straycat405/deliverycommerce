@@ -2,8 +2,11 @@ package com.babjo.deliverycommerce.user.controller;
 
 import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
+import com.babjo.deliverycommerce.global.redis.RedisKeys;
+import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.user.dto.*;
 import com.babjo.deliverycommerce.user.service.UserService;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -13,10 +16,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RestController
@@ -26,6 +28,7 @@ public class UserController {
 
     private final UserService userService;
     private final JwtUtil jwtUtil;
+    private final RedisUtil redisUtil;
 
     /**
      * POST /v1/users/signup
@@ -59,5 +62,41 @@ public class UserController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         return ApiResponse.ok("로그인 성공", loginResponse);
+    }
+
+    /**
+     * POST /v1/users/logout
+     * 로그아웃
+     * AccessToken을 Redis Blacklist에 등록하고 Refresh Token을 Redis에서 삭제합니다.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader, HttpServletResponse response
+    ) {
+        // "Bearer {token}에서 토큰만 추출
+        String token = jwtUtil.subStringToken(authHeader);
+        // 추출 토큰에서 사용자 정보 추출
+        Claims info = jwtUtil.getUserInfoFromToken(token);
+        // 토큰의 userId값 추출
+        long userId = Long.parseLong(info.getSubject());
+        // Access Token 남은 만료시간 계산
+        long duration = jwtUtil.getRemainExpiration(token);
+        // Redis에 AccessToken 블랙리스트 등록
+        redisUtil.set(RedisKeys.blacklistKey(token),"logout", duration, TimeUnit.MILLISECONDS);
+        // Refresh Token 삭제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
+        // Refresh Token 쿠키 만료 (응답 쿠키 설정)
+        // Http Cookie 설정
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0) // ms -> 초 변환
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 응답 반환
+        return ApiResponse.ok("로그아웃 성공",null);
     }
 }

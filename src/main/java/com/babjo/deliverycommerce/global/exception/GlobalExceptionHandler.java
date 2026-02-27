@@ -49,15 +49,15 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(FieldError::getDefaultMessage)
                 .findFirst()
-                .orElse("입력값이 유효하지 않습니다");
+                .map(FieldError::getDefaultMessage)  // DTO @Pattern message가 여기서 올라온다
+                .orElse(ErrorCode.INVALID_INPUT.getMessage()); // fallback도 enum에서 가져옴
 
         log.warn("[ValidationException] message={}", message);
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(ErrorCode.INVALID_INPUT));
+                .body(ApiResponse.error(ErrorCode.INVALID_INPUT, message)); // 동적 메세지 주입
     }
 
     // 나머지 예상 못한 예외상황

@@ -57,4 +57,15 @@ public class ApiResponse<T> {
         res.message = errorCode.getMessage();
         return res;
     }
+
+    // 실패 응답 - message 동적 교체용
+    // @Valid 검증 실패 사유 등을 메세지로 전달하고 싶을때 message를 함께 담아서 보내줍니다.
+    // 오버로드 하지 않은 실패 응답은 ErrorCode상의 메시지만 리턴함
+    public static <T> ApiResponse<T> error(ErrorCode errorCode, String message) {
+        ApiResponse<T> res = new ApiResponse<>();
+        res.status = errorCode.getStatus().value();
+        res.code = errorCode.getCode();
+        res.message = message; // ErrorCode 기본 메시지 대신 동적 메시지 사용
+        return res;
+    }
 }

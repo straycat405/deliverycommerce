@@ -71,7 +71,7 @@ public class StoreService {
     private Store findActiveStore(UUID storeId) {
         return storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)
                 .orElseThrow(() -> {
-                    log.info("Store not found or deleted. storeId={}", storeId);
+                    log.warn("Store not found or deleted. storeId={}", storeId);
                     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Store not found");
                 });
     }
@@ -84,6 +84,14 @@ public class StoreService {
         store.softDelete(actorUserId);
 
         log.info("Store deleted. storeId={} actorUserId={}", store.getStoreId(), actorUserId);
+    }
+
+    private void validateOwner(Store store, Long actorUserId) {
+        if (!store.getOwnerId().equals(actorUserId)) {
+            log.warn("Store owner mismatch. storeId={} ownerId={} actorUserId={}", store.getStoreId(), store.getOwnerId(), actorUserId);
+
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not store owner");
+        }
     }
 
 

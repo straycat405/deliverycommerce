@@ -69,5 +69,6 @@ logs/
 # Etc
 # ===========================
 CLAUDE.md
-PROGRESS.mdCLAUDE.md
+PROGRESS.md
 EC2_ENV_SETUP.md
+COMMON_LOGIC_GUIDE.md

@@ -45,9 +45,11 @@ public class ReviewController {
     }
 
     @GetMapping
-    public List<ReviewResponse> getReviews() {
-
-        return null;
+    public List<ReviewResponse> getReviews(
+            @RequestParam(required = false) UUID reviewId,
+            @RequestParam(required = false) UUID storeId
+    ) {
+        return reviewService.getReviews(reviewId, storeId);
     }
 
     @DeleteMapping("/{reviewId}")

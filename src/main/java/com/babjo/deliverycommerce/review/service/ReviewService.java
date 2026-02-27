@@ -2,6 +2,7 @@ package com.babjo.deliverycommerce.review.service;
 
 import com.babjo.deliverycommerce.review.dto.ReviewCreateRequest;
 import com.babjo.deliverycommerce.review.dto.ReviewCreateResponse;
+import com.babjo.deliverycommerce.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.review.dto.ReviewUpdateRequest;
 import com.babjo.deliverycommerce.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.review.entity.Review;
@@ -11,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 // [TODO] 도메인 연결 후 import 추가 필요
 // import com.babjo.deliverycommerce.order.entity.Order;
 // import com.babjo.deliverycommerce.order.entity.OrderStatus;
@@ -63,6 +66,33 @@ public class ReviewService {
         Review savedReview = reviewRepository.save(review);
 
         return reviewMapper.toCreateResponse(savedReview);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getReviews(UUID reviewId, UUID storeId) {
+        // [TODO] 인증 연결 후 userId 기반 필터 추가 (아무 파라미터도 않들어왔을때 사용자용 전체 리뷰 조회)
+
+        // reviewId가 있으면 단건 조회 (List 형태로 반환)
+        if (reviewId != null) {
+            Review review = reviewRepository.findByReviewIdAndDeletedAtIsNull(reviewId)
+                    .orElseThrow(() -> new RuntimeException("Review not found"));
+            return List.of(reviewMapper.toResponse(review));
+        }
+
+        // storeId 필터 목록 조회
+        // [TODO] Store 도메인 연결 후 주석 해제
+        // if (storeId != null) {
+        //     return reviewRepository.findAllByStore_StoreIdAndDeletedAtIsNull(storeId)
+        //             .stream()
+        //             .map(reviewMapper::toResponse)
+        //             .collect(Collectors.toList());
+        // }
+
+        // 전체 목록 조회
+        return reviewRepository.findAllByDeletedAtIsNull()
+                .stream()
+                .map(reviewMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     public void deleteReview(UUID reviewId) {

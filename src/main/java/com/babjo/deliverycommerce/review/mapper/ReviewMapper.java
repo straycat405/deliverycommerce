@@ -1,6 +1,7 @@
 package com.babjo.deliverycommerce.review.mapper;
 
 import com.babjo.deliverycommerce.review.dto.ReviewCreateResponse;
+import com.babjo.deliverycommerce.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.review.entity.Review;
 import com.babjo.deliverycommerce.review.dto.ReviewCreateRequest;
@@ -8,6 +9,22 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ReviewMapper {
+
+
+
+    public ReviewResponse toResponse(Review review) {
+        return ReviewResponse.builder()
+                .reviewId(review.getReviewId())
+                // [TODO] Order/Store 연결 후 주석 해제 필요
+                // .orderId(review.getOrder().getId())
+                // .storeId(review.getStore().getId())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .createdAt(review.getCreatedAt())
+                .updatedAt(review.getUpdatedAt())
+                .build();
+    }
+
 
     public Review toEntity(
             ReviewCreateRequest createRequest

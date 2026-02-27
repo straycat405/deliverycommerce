@@ -78,7 +78,7 @@ public class WebSecurityConfig {
     // JwtAuthorizationFilter도 @Component가 아니므로 직접 빈으로 등록
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, userDetailsService, redisUtil);
+        return new JwtAuthorizationFilter(jwtUtil, redisUtil);
     }
 
     @Bean

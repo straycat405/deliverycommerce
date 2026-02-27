@@ -1,0 +1,61 @@
+package com.babjo.deliverycommerce.product.entity;
+
+import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  // 생성자를 통해서 값 변경을 목적으로 접근하는 메시지들 차단
+@AllArgsConstructor
+@Builder
+@Table(name = "p_product")
+public class Product extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "product_id")
+    private UUID productId;
+
+    // Store 구현 이후 연결
+    // private Store store;
+
+    @Column(name = "product_category", nullable = false, length = 10)
+    private String productCategory;
+
+    @Column(name = "name", nullable = false, length = 10)
+    private String name;
+
+    @Column(name = "price", nullable = false)
+    private Integer price;
+
+    @Column(name = "description", nullable = false, length = 255)   // 255 부족할 경우 TEXT로 수정 예정
+    private String description;
+
+    @Column(name = "product_hide", nullable = false)
+    @Builder.Default    // Lombok 기능, default 값 설정
+    private Boolean productHide = false;
+
+    @Column(name = "is_use_ai", nullable = false)
+    @Builder.Default
+    private Boolean useAiDescription = false;
+
+    // domain method
+    public void update(String name, Integer price, String description, String productCategory) {
+        this.name = name;
+        this.price = price;
+        this.description = description;
+        this.productCategory = productCategory;
+    }
+
+    public void hide() {
+        this.productHide = true;
+    }
+
+    public void show() {
+        this.productHide = false;
+    }
+}

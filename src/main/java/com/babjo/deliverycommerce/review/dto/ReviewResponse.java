@@ -1,6 +1,7 @@
 package com.babjo.deliverycommerce.review.dto;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ReviewResponse {
@@ -9,6 +10,6 @@ public class ReviewResponse {
     private UUID storeId;
     private Integer rating;
     private String comment;
-    private Timestamp createdAt;
-    private Timestamp updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

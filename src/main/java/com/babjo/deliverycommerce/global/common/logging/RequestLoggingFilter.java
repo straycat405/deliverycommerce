@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.global.common.filter;
+package com.babjo.deliverycommerce.global.common.logging;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;

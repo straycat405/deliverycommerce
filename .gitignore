@@ -69,4 +69,5 @@ logs/
 # Etc
 # ===========================
 CLAUDE.md
-PROGRESS.md
+PROGRESS.mdCLAUDE.md
+EC2_ENV_SETUP.md

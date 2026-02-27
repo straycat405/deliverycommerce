@@ -3,13 +3,7 @@ package com.babjo.deliverycommerce.review.entity;
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import com.babjo.deliverycommerce.user.entity.User;
 import jakarta.persistence.*;
-
-import java.util.UUID;
-
-import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 import java.util.UUID;
 

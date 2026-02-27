@@ -2,13 +2,13 @@ package com.babjo.deliverycommerce.review.dto;
 
 import lombok.Data;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 public class ReviewUpdateResponse {
-    private String reviewId;
+    private UUID reviewId;
     private Integer rating;
-    private String comment;
+    private String content;
     private LocalDateTime updatedAt;
 }

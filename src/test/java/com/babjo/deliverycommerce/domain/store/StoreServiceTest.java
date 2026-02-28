@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
@@ -71,6 +70,31 @@ class StoreServiceTest {
 
         //when then
         assertThatThrownBy(() -> storeService.update(storeID, actorUserId, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("errorCode")
+                .isEqualTo(ErrorCode.STORE_FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("가게 주인이 아닌 사용자가 삭제하면 STORE_FORBIDDEN 예외 처리")
+    void delete_fail_whenActorIsNotOwner() {
+        //given
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 1L;
+        Long actorUserId = 2L;
+
+        Store store = Store.create(
+                ownerId,
+                "KOREAN",
+                "밥집",
+                "서울시 강남구"
+        );
+
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
+                .willReturn(Optional.of(store));
+
+        //when & then
+        assertThatThrownBy(() -> storeService.delete(storeId, actorUserId))
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.STORE_FORBIDDEN);

@@ -1,6 +1,7 @@
 package com.babjo.deliverycommerce.user.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import jakarta.persistence.*;
 import lombok.*;
 

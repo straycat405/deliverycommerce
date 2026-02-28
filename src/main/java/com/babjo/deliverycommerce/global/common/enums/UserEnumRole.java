@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.user.entity;
+package com.babjo.deliverycommerce.global.common.enums;
 
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;

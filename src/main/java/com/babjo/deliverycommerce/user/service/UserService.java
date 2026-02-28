@@ -9,7 +9,7 @@ import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
 import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
 import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
 import com.babjo.deliverycommerce.user.entity.User;
-import com.babjo.deliverycommerce.user.entity.UserEnumRole;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

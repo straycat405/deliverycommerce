@@ -1,6 +1,4 @@
-# ===========================
 # IntelliJ IDEA
-# ===========================
 .idea/
 *.iws
 *.iml
@@ -9,49 +7,38 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-# ===========================
-# Spring Boot / Gradle
-# ===========================
-/build/
-/.gradle/
+# Gradle
+.gradle/
+build/
 
-# ===========================
-# 환경변수
-# ===========================
+# Spring / env
+docs/HELP.md
 .env
 *.env
 application-local.yml
+application-local.yaml
 application-secret.yml
+application-secret.yaml
 
-# ===========================
-# QueryDSL 생성 파일
-# ===========================
+# QueryDSL
+/build/generated/
 /build/generated/querydsl/
 
-# ===========================
-# Mac OS
-# ===========================
+# OS
 .DS_Store
-
-# ===========================
-# Windows
-# ===========================
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# ===========================
 # Logs
-# ===========================
 *.log
 logs/
 
-# ===========================
-# Local docs / misc
-# ===========================
+# Docs / local
 CLAUDE.md
 docs/PROGRESS.md
 EC2_ENV_SETUP.md
 docs/COMMON_LOGIC_GUIDE.md
 .claude/
 dump.rdb
+docs/

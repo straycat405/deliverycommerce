@@ -229,5 +229,36 @@ class StoreServiceTest {
         assertThat(response.get(1).getCategory()).isEqualTo("CHICKEN");
     }
 
-    
+    @Test
+    @DisplayName("name 조건으로 가게 목록을 조회하면 이름 검색 결과를 반환")
+    void getStores_success_whenNameCondition() {
+        //given
+        String name = "치킨";
+
+        Store store1 = Store.create(
+                1L,
+                "CHICKEN",
+                "치킨천국",
+                "서울시 강남구"
+        );
+
+        Store store2 = Store.create(
+                2L,
+                "CHICKEN",
+                "치킨치킨",
+                "서울시 서초구"
+        );
+
+        List<Store> stores = List.of(store1, store2);
+
+        given(storeRepository.findByDeletedAtIsNullAndNameContainingIgnoreCase(eq(name), any(PageRequest.class))).willReturn(new PageImpl<>(stores));
+
+        //when
+        List<StoreListResponseDto> response = storeService.getStores(null, name, 0);
+
+        //then
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).getName()).contains("치킨");
+        assertThat(response.get(1).getName()).contains("치킨");
+    }
 }

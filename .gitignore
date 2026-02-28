@@ -31,7 +31,7 @@ out/
 # ===========================
 # Spring Boot
 # ===========================
-HELP.md
+docs/HELP.md
 /build/
 
 # ===========================
@@ -66,11 +66,12 @@ Desktop.ini
 logs/
 
 # ===========================
-# Etc
+# docs
 # ===========================
 CLAUDE.md
-PROGRESS.md
+docs/PROGRESS.md
 EC2_ENV_SETUP.md
-COMMON_LOGIC_GUIDE.md
+docs/COMMON_LOGIC_GUIDE.md
 .claude/
 dump.rdb
+docs/

@@ -16,8 +16,8 @@ package com.babjo.deliverycommerce.global.security;
  *   각 Controller 메서드에 @PreAuthorize 로 권한 지정할 것
  *
  *   ex) MASTER만 접근 권한 있음
- *     @PreAuthorize("hasRole('MASTER')") < 해당 방법으로
- *     @PreAuthorize("hasRole('" + UserRoleEnum.Authority.MASTER + "')") < 가능하지만 통일하는 것이 좋음
+ *     @PreAuthorize("hasRole('MASTER')")  < 이 방법을 주로 사용합니다.
+ *     @PreAuthorize("hasRole('" + UserRoleEnum.Authority.MASTER + "')")
  *
  *   ex) 복수 권한
  *     @PreAuthorize("hasAnyRole('MANAGER', 'MASTER')")
@@ -31,7 +31,7 @@ package com.babjo.deliverycommerce.global.security;
  *   별도 처리 불필요, 자동 동작
  *
  * [비밀번호 암호화]
- *   PasswordEncoder 빈이 여기 등록되어 있음 - 주입받아서 사용하세요.
+ *   PasswordEncoder 빈이 여기 등록되어 있음 - 주입받아서 사용
  *   ex) private final PasswordEncoder passwordEncoder;
  *       passwordEncoder.encode(rawPassword);
  *

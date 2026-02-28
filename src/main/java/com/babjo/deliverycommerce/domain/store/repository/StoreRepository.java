@@ -24,4 +24,6 @@ public interface StoreRepository extends JpaRepository<Store, UUID> {
 
     // 목록 조회 + category + name
     Page<Store> findByDeletedAtIsNullAndCategoryAndNameContaining(String category, String name, Pageable pageable);
+
+    Page<Store> findByDeletedAtIsNullAndCategoryAndNameContainingIgnoreCase(String category, String name, Pageable pageable);
 }

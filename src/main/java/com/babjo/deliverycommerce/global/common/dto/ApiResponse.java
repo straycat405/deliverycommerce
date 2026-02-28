@@ -4,7 +4,7 @@ package com.babjo.deliverycommerce.global.common.dto;
  * 공통 API 응답 래퍼 클래스
  *
  * 성공 - 200
- * return ResponseEntity.ok(ApiResponse.success(responseDto));
+ * return ApiResponse.ok("로그인 성공", loginResponseDto);
  *
  * 실패
  * -> GlobalExceptionHandler가 자동 처리하므로 직접 호출하지 않습니다.
@@ -83,5 +83,15 @@ public class ApiResponse<T> {
         return ResponseEntity
                 .status(errorCode.getStatus())
                 .body(new ApiResponse<>(errorCode.getStatus().value(), errorCode.getCode(), message, null));
+    }
+
+    // ── Filter용 (ResponseEntity 없이 객체만 반환) ────────────────────
+    public static ApiResponse<?> errorBody(ErrorCode errorCode) {
+        return new ApiResponse<>(
+                errorCode.getStatus().value(),
+                errorCode.getCode(),
+                errorCode.getMessage(),
+                null
+        );
     }
 }

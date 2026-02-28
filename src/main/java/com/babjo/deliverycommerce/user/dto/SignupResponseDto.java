@@ -2,7 +2,6 @@ package com.babjo.deliverycommerce.user.dto;
 
 import com.babjo.deliverycommerce.user.entity.User;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 

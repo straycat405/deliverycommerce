@@ -48,9 +48,10 @@ public class JwtUtil {
     /**
      * Access Token 생성
      * payload에 userId, username, role 담아서 서명
-      * @param userId
+     *
+     * @param userId
      * @param username
-     * @param role ( CUSTOMER / OWNER / MANAGER / MASTER )
+     * @param role     ( CUSTOMER / OWNER / MANAGER / MASTER )
      */
     public String createAccessToken(Long userId, String username, String role) {
         Date now = new Date();
@@ -67,6 +68,7 @@ public class JwtUtil {
     /**
      * Refresh Token 생성
      * Access Token 재발급 용도로만 사용 (payload 최소화)
+     *
      * @param userId 사용자 PK
      */
     public String createRefreshToken(Long userId) {
@@ -111,6 +113,7 @@ public class JwtUtil {
     public long getRemainExpiration(String token) {
         return parseToken(token).getExpiration().getTime() - new Date().getTime();
     }
+
     /**
      * Refresh Token 만료시간 반환 (ms)
      * Controller에서 Cookie maxAge 세팅 시 사용

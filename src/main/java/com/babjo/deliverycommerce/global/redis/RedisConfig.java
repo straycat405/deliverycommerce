@@ -18,8 +18,8 @@ public class RedisConfig {
     private int port;
 
     /**
-     *  Redis 연결 설정
-     *  - LettuceConnectionFactory: 기본 Redis 클라이언트
+     * Redis 연결 설정
+     * - LettuceConnectionFactory: 기본 Redis 클라이언트
      */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
@@ -30,7 +30,7 @@ public class RedisConfig {
      * RedisTemplate 설정
      * - Key: String 직렬화
      * - Value: String 직렬화
-     *
+     * <p>
      * refresh:{userId}, blacklist:{accessToken} 모두 String으로 저장하므로
      * StringRedisTemplate과 동일한 효과
      */

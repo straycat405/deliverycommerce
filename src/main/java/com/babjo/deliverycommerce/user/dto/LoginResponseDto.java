@@ -1,11 +1,7 @@
 package com.babjo.deliverycommerce.user.dto;
 
-import com.babjo.deliverycommerce.user.entity.UserEnumRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Getter
 public class LoginResponseDto {

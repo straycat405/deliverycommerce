@@ -18,8 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
@@ -130,6 +129,30 @@ class StoreServiceTest {
         StoreResponseDto response = storeService.create(ownerId, request);
 
         //then
+        assertThat(response.getCategory()).isEqualTo("KOREAN");
+        assertThat(response.getName()).isEqualTo("밥집");
+        assertThat(response.getAddress()).isEqualTo("서울시 강남구");
+    }
+
+    @Test
+    @DisplayName("존재하는 가게를 조회하면 가게정보를 반환")
+    void getStore_success() {
+        //given
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 1L;
+
+        Store store = Store.create(
+                ownerId,
+                "KOREAN",
+                "밥집",
+                "서울시 강남구"
+        );
+
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(store));
+
+        //when
+        StoreResponseDto response = storeService.get(storeId);
+
         assertThat(response.getCategory()).isEqualTo("KOREAN");
         assertThat(response.getName()).isEqualTo("밥집");
         assertThat(response.getAddress()).isEqualTo("서울시 강남구");

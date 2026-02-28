@@ -4,18 +4,21 @@ import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
-import com.babjo.deliverycommerce.user.dto.*;
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
+import com.babjo.deliverycommerce.user.dto.LoginRequestDto;
+import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
+import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
+import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
 import com.babjo.deliverycommerce.user.service.UserService;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.TimeUnit;
@@ -71,14 +74,15 @@ public class UserController {
      */
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader, HttpServletResponse response
+            @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader,
+            @AuthenticationPrincipal UserPrincipal principal,
+            HttpServletResponse response
     ) {
         // "Bearer {token}에서 토큰만 추출
         String token = jwtUtil.subStringToken(authHeader);
-        // 추출 토큰에서 사용자 정보 추출
         Claims info = jwtUtil.getUserInfoFromToken(token);
         // 토큰의 userId값 추출
-        long userId = Long.parseLong(info.getSubject());
+        long userId = principal.getUserId();
         // Access Token 남은 만료시간 계산
         long duration = jwtUtil.getRemainExpiration(token);
         // Redis에 AccessToken 블랙리스트 등록

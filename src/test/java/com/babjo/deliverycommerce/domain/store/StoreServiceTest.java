@@ -1,6 +1,7 @@
 package com.babjo.deliverycommerce.domain.store;
 
 import com.babjo.deliverycommerce.domain.store.dto.StoreCreateRequestDto;
+import com.babjo.deliverycommerce.domain.store.dto.StoreListResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
@@ -14,7 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -156,5 +160,37 @@ class StoreServiceTest {
         assertThat(response.getCategory()).isEqualTo("KOREAN");
         assertThat(response.getName()).isEqualTo("밥집");
         assertThat(response.getAddress()).isEqualTo("서울시 강남구");
+    }
+
+    @Test
+    @DisplayName("조건 없이 가게 목록을 조회하면 전체 가게 목록을 반환")
+    void getStores_success_whenNoCondition() {
+        //given
+        //전체 조회시 반환할 가게 엔티티 2개
+        Store store1 = Store.create(
+                1L,
+                "KOREAN",
+                "밥집",
+                "서울시 강남구"
+        );
+
+        Store store2 = Store.create(
+                2L,
+                "CHICKEN",
+                "치킨집",
+                "서울시 서초구"
+        );
+
+        List<Store> stores = List.of(store1, store2);
+
+        given(storeRepository.findByDeletedAtIsNull(any(PageRequest.class))).willReturn(new PageImpl<>(stores));
+
+        //when
+        List<StoreListResponseDto> response = storeService.getStores(null, null, 0);
+
+        //then
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).getName()).isEqualTo("밥집");
+        assertThat(response.get(1).getName()).isEqualTo("치킨집");
     }
 }

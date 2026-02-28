@@ -32,7 +32,7 @@ public class AuditorAwareImpl implements AuditorAware<Long> {
             return Optional.empty();
         }
 
-        // 로그인 상태 → JWT에서 파싱된 UserDetails에서 userId 꺼냄
+        // 로그인 상태 → JWT에서 파싱된 UserPrincipal에서 userId 꺼냄
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return Optional.of(principal.getUserId());
     }

@@ -1,5 +1,7 @@
 package com.babjo.deliverycommerce.domain.store;
 
+import com.babjo.deliverycommerce.domain.store.dto.StoreCreateRequestDto;
+import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
@@ -16,7 +18,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -98,5 +102,36 @@ class StoreServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.STORE_FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("가게 생성에 성공하면 저장된 가게 정보를 반환")
+    void create_success() {
+        //given
+        Long ownerId = 1L;
+
+        StoreCreateRequestDto request = new StoreCreateRequestDto(
+                "KOREAN",
+                "밥집",
+                "서울시 강남구"
+        );
+
+        Store saveStore = Store.create(
+                ownerId,
+                request.getCategory(),
+                request.getName(),
+                request.getAddress()
+        );
+
+        given(storeRepository.save(any(Store.class)))
+                .willReturn(saveStore);
+
+        //when
+        StoreResponseDto response = storeService.create(ownerId, request);
+
+        //then
+        assertThat(response.getCategory()).isEqualTo("KOREAN");
+        assertThat(response.getName()).isEqualTo("밥집");
+        assertThat(response.getAddress()).isEqualTo("서울시 강남구");
     }
 }

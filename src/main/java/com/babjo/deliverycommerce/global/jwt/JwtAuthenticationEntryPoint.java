@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.global.jwt;
 /**
  * JwtAuthenticationEntryPoint / JwtAccessDeniedHandler는 Spring Security 필터 레벨에서 동작하므로
  * GlobalExceptionHandler를 거치지 않으므로 별도로 작성합니다.
+ *
  * @RestControllerAdvice가 개입하기 전에 응답이 나가므로 ObjectMapper로 직접 JSON을 직렬화해서 응답합니다.
  * ApiResponse.error(ErrorCode)는 동일하게 재사용합니다.
  */

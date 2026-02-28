@@ -2,7 +2,8 @@ package com.babjo.deliverycommerce.global.redis;
 
 public final class RedisKeys {
 
-    private RedisKeys() {} // 인스턴스화 방지
+    private RedisKeys() {
+    } // 인스턴스화 방지
 
     // 리프레시 토큰 저장용 prefix
     // 사용: "refresh:" + userId → "refresh:1"

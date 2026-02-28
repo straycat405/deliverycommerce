@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -193,4 +195,39 @@ class StoreServiceTest {
         assertThat(response.get(0).getName()).isEqualTo("밥집");
         assertThat(response.get(1).getName()).isEqualTo("치킨집");
     }
+
+    @Test
+    @DisplayName("category 조건으로 가게 목록을 조회하면 해당 카테고리 목록 반환")
+    void getStores_success_whenCategoryCondition() {
+        //given
+        String category = "CHICKEN";
+
+        Store store1 = Store.create(
+                1L,
+                "CHICKEN",
+                "BHC",
+                "서울시 강남구"
+        );
+
+        Store store2 = Store.create(
+                2L,
+                "CHICKEN",
+                "교촌치킨",
+                "서울시 서초구"
+        );
+
+        List<Store> stores = List.of(store1, store2);
+
+        given(storeRepository.findByDeletedAtIsNullAndCategory(eq(category), any(Pageable.class))).willReturn(new PageImpl<>(stores));
+
+        //when
+        List<StoreListResponseDto> response = storeService.getStores(category, null, 0);
+
+        //then
+        assertThat(response).hasSize(2);
+        assertThat(response.get(0).getCategory()).isEqualTo("CHICKEN");
+        assertThat(response.get(1).getCategory()).isEqualTo("CHICKEN");
+    }
+
+    
 }

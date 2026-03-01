@@ -35,7 +35,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     // ObjectMapper를 주입받아 ApiResponse 객체를 JSON으로 변환하는 방식으로 활용
     private final ObjectMapper objectMapper;
 
-    // UserDetailsServiceImpl 제거 — DB 조회 안 하므로 불필요
     public JwtAuthorizationFilter(JwtUtil jwtUtil, RedisUtil redisUtil, ObjectMapper objectMapper) {
         this.jwtUtil = jwtUtil;
         this.redisUtil = redisUtil;

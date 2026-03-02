@@ -10,7 +10,7 @@ package com.babjo.deliverycommerce.global.common.audit;
  * save() 호출 시 JPA가 이 클래스를 통해 자동으로 값을 주입한다.
  */
 
-import com.babjo.deliverycommerce.global.security.UserDetailsImpl;
+
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.AuditorAware;

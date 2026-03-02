@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.user.service;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
+import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.user.dto.LoginRequestDto;
 import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
@@ -11,6 +12,7 @@ import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
 import com.babjo.deliverycommerce.user.entity.User;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -110,6 +112,70 @@ public class UserService {
                 user.getRole().name(),
                 accessToken,
                 refreshToken // Controller에서 쿠키 처리
+        );
+    }
+
+    /**
+     * 토큰 재발급
+     * Refresh Token 검증 후 새로운 Access Token + Refresh Token 발급
+     */
+    public LoginResponseDto reissue(String refreshToken) {
+        log.info("reissue 호출됨, refreshToken={}", refreshToken);
+
+        // null/빈 값 체크
+        if (refreshToken == null) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // Refresh Token 유효성 검증 + userId 추출
+        Claims info;
+        try {
+            info = jwtUtil.getUserInfoFromToken(refreshToken);
+        } catch (CustomException e) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        Long userId = Long.valueOf(info.getSubject());
+
+        // 사용자 존재 및 탈퇴 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
+        // Redis에서 저장된 Refresh Token 조회
+        String savedToken = redisUtil.get(RedisKeys.refreshKey(userId));
+        if (savedToken == null) {
+            throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
+        }
+
+        // 비교 검증
+        if (!refreshToken.equals(savedToken)) {
+            // 불일치 -> 탈취 의심 -> Redis 토큰 삭제 -> 401
+            redisUtil.delete(RedisKeys.refreshKey(userId));
+            throw new CustomException(ErrorCode.TOKEN_MISMATCH);
+        }
+
+        // 새 Access Token + Refresh Token 발급
+        String newAccessToken = jwtUtil.createAccessToken(
+                user.getUserId(), user.getUsername(), user.getRole().name()
+        );
+        log.info("Reissued Access token={}", newAccessToken);
+        String newRefreshToken = jwtUtil.createRefreshToken(user.getUserId());
+        log.info("Reissued Refresh token={}", newRefreshToken);
+
+        // Redis에 새 Refresh Token 갱신
+        redisUtil.set(RedisKeys.refreshKey(userId), newRefreshToken, 7, TimeUnit.DAYS);
+
+        return new LoginResponseDto(
+                userId,
+                user.getUsername(),
+                user.getNickname(),
+                user.getRole().name(),
+                newAccessToken,
+                newRefreshToken
         );
     }
 }

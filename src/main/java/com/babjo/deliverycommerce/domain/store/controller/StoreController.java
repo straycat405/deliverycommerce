@@ -6,9 +6,11 @@ import com.babjo.deliverycommerce.domain.store.dto.StoreListResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.service.StoreService;
+import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +23,13 @@ public class StoreController {
 
     private final StoreService storeService;
 
-    public StoreController(StoreService storeService) {
+    // 기존 X-USER-ID 헤더 방식 대신
+    // 현재 로그인 사용자 ID를 SecurityContext 기반으로 추출하기 위해 사용
+    private final CurrentUserResolver currentUserResolver;
+
+    public StoreController(StoreService storeService, CurrentUserResolver currentUserResolver) {
         this.storeService = storeService;
+        this.currentUserResolver = currentUserResolver;
     }
 
     /**
@@ -32,10 +39,15 @@ public class StoreController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public StoreResponseDto create(@RequestHeader("X-USER-ID") Long ownerId,
+    public StoreResponseDto create(Authentication authentication,
                                    @Valid @RequestBody StoreCreateRequestDto request) {
 
-        log.info("가게 생성 API 요청: ownerId={}, category={}, name={}", ownerId, request.getCategory(), request.getName());
+        // 인증 객체에서 현재 로그인 사용자 ID 추출
+        // (헤더로 직접 userId를 받지 않고, 공용 인증 구조를 그대로 사용하기 위함)
+        Long ownerId = currentUserResolver.getUserId(authentication);
+
+        log.info("가게 생성 API 요청: ownerId={}, category={}, name={}",
+                ownerId, request.getCategory(), request.getName());
 
         StoreResponseDto result = storeService.create(ownerId, request);
         log.info("가게 생성 API 완료: storeId={}, ownerId={}", result.getStoreId(), ownerId);
@@ -63,8 +75,10 @@ public class StoreController {
      */
     @PatchMapping("/{storeId}")
     public StoreResponseDto update(@PathVariable UUID storeId,
-                                   @RequestHeader("X-USER-ID") Long actorUserId,
+                                   Authentication authentication,
                                    @Valid @RequestBody StoreUpdateRequestDto request) {
+
+        Long actorUserId = currentUserResolver.getUserId(authentication);
 
         log.info("가게 수정 요청: storeId={}, actorUserId={}",
                 storeId, actorUserId);
@@ -82,7 +96,9 @@ public class StoreController {
     @DeleteMapping("/{storeId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID storeId,
-                       @RequestHeader("X-USER-ID") Long actorUserId) {
+                       Authentication authentication) {
+
+        Long actorUserId = currentUserResolver.getUserId(authentication);
 
         log.info("가게 삭제 요청: storeId={}, actorUserId={}", storeId, actorUserId);
 

@@ -1,9 +1,6 @@
 package com.babjo.deliverycommerce.user.controller;
 
 import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
-import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
-import com.babjo.deliverycommerce.global.exception.CustomException;
-import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
@@ -12,12 +9,9 @@ import com.babjo.deliverycommerce.user.dto.LoginRequestDto;
 import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
 import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
 import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
-import com.babjo.deliverycommerce.user.entity.User;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
 import com.babjo.deliverycommerce.user.service.UserService;
 import io.jsonwebtoken.Claims;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +22,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j

@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.user.service;
 
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
@@ -10,7 +11,6 @@ import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
 import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
 import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
 import com.babjo.deliverycommerce.user.entity.User;
-import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.validation.Valid;

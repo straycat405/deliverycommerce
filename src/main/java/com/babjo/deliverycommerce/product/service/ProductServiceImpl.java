@@ -49,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
         return ProductResponseDto.from(product);
     }
 
-    // 단건 조회
+    // 단건 조회(owner 전용)
     @Override
     public ProductResponseDto get(UUID productId) {
 
@@ -60,7 +60,7 @@ public class ProductServiceImpl implements ProductService {
         return ProductResponseDto.from(product);
     }
 
-    // 전체 조회
+    // 전체 조회(owner 전용)
     @Override
     public List<ProductResponseDto> getAll() {
         return productRespository.findAllByDeletedAtIsNull()
@@ -68,6 +68,10 @@ public class ProductServiceImpl implements ProductService {
                 .map(ProductResponseDto::from)
                 .collect(Collectors.toList());
     }
+
+    // 단건 조회(customer 전용: 숨김처리 한 상품 표시 X)
+
+    // 전체 조회(customer 전용)
 
     // 수정
     @Override
@@ -104,5 +108,23 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.delete(userId);
+    }
+
+    @Override
+    @Transactional
+    public void hide(UUID productId) {
+        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+
+        product.hide();
+    }
+
+    @Override
+    @Transactional
+    public void show(UUID productId) {
+        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+
+        product.show();
     }
 }

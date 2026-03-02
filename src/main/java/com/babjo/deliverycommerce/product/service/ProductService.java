@@ -14,4 +14,7 @@ public interface ProductService {
     List<ProductResponseDto> getAll();
     ProductResponseDto update(UUID productId, ProductUpdateRequestDto request);
     void delete(UUID productId, Long userId);
+
+    void hide(UUID productId);
+    void show(UUID productId);
 }

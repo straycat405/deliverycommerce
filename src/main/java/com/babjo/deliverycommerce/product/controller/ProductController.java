@@ -52,4 +52,19 @@ public class ProductController {
         productService.delete(productId, tempUserId);
         return ResponseEntity.noContent().build();  // 성공적으로 삭제 시 204 No Content
     }
+
+    // hide, show 를 좋아요, 좋아요 취소 처럼 하나의 API로 수정 예정
+    @PatchMapping("/{productId}/hide")
+    public ResponseEntity<Void> hide(@PathVariable UUID productId) {
+        productService.hide(productId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{productId}/show")
+    public ResponseEntity<Void> show(@PathVariable UUID productId) {
+        productService.show(productId);
+        return ResponseEntity.noContent().build();
+    }
+
+
 }

@@ -34,7 +34,7 @@ public class StoreController {
 
     /**
      * 가게 생성
-     * - ownerId는 헤더에서 전달
+     * - ownerId는 인증 객체에서 추출한 현재 사용자 ID
      * - 요청 본문은 유효성 검사
      */
     @PostMapping
@@ -70,7 +70,7 @@ public class StoreController {
 
     /**
      * 가게 수정
-     * - actorUserId는 헤더에서 전달
+     * - actorUserId는 인증 객체에서 추출한 현재 사용자 ID
      * - 요청 본문은 유효성 검사
      */
     @PatchMapping("/{storeId}")

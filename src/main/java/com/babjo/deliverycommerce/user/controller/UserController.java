@@ -9,7 +9,6 @@ import com.babjo.deliverycommerce.user.dto.LoginRequestDto;
 import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
 import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
 import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
-import com.babjo.deliverycommerce.user.repository.UserRepository;
 import com.babjo.deliverycommerce.user.service.UserService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,7 +32,6 @@ public class UserController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
-    private final UserRepository userRepository;
 
     /**
      * POST /v1/users/signup

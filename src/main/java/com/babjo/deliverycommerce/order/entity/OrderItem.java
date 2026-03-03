@@ -34,8 +34,20 @@ public class OrderItem extends BaseEntity {
     @Column(nullable = false)
     private Integer orderCount;
 
+    public static OrderItem createOrderItem(UUID productId, String productName, Integer orderPrice, Integer orderCount){
+        OrderItem orderItem = new OrderItem();
+        orderItem.productId = productId;
+        orderItem.productName = productName;
+        orderItem.orderPrice = orderPrice;
+        orderItem.orderCount = orderCount;
+        return orderItem;
+    }
+
     public void setOrder(Order order){
         this.order = order;
     }
 
+    public int getItemTotal(){
+        return this.orderPrice * this.orderCount;
+    }
 }

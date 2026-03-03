@@ -52,7 +52,35 @@ public class Order extends BaseEntity {
 
     private Integer cookingMinutes;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
+
+    public static Order createOrder(Long userId, UUID storeId, String address, String message, List<OrderItem> orderItems){
+        Order order = new Order();
+        order.userId = userId;
+        order.storeId = storeId;
+        order.address = address;
+        order.message = message;
+        order.status = OrderStatus.CREATED;
+
+        for(OrderItem item : orderItems){
+            order.addOrderItem(item);
+        }
+
+        order.calculateTotalPrice();
+        return order;
+
+    }
+
+    public void addOrderItem(OrderItem orderItem){
+        this.orderItems.add(orderItem);
+        orderItem.setOrder(this);
+    }
+    private void calculateTotalPrice(){
+        this.totalPrice = this.orderItems.stream()
+                .mapToInt(item -> item.getOrderPrice() * item.getOrderCount())
+                .sum();
+    }
 
     public void cancel(Long userId, String reason){
         if(!status.canCancel()){

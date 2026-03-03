@@ -14,7 +14,6 @@ package com.babjo.deliverycommerce.global.exception;
  *  4. 에러코드 문자열( 2nd Parameter)는 EUNM 이름과 동일하게
  */
 
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -48,10 +47,14 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
 
     // ── Infrastructure  ─────────────────────
-    REDIS_OPERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "REDIS_OPERATION_FAILED", "인증 처리 중 오류가 발생했습니다.");
+    REDIS_OPERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "REDIS_OPERATION_FAILED", "인증 처리 중 오류가 발생했습니다."),
 
     // ── Store / Product / Order / Payment / Review ────
     // 각 도메인 담당자가 PR로 추가
+
+    // ── Store ─────────────────────────────────────────
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
+    STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다.");
 
     private final HttpStatus status;
     private final String code;

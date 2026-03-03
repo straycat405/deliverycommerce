@@ -138,7 +138,7 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         if (role == null) {
             throw new CustomException(ErrorCode.INVALID_TOKEN);
         }
-
+      
         List<GrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + role)
         );

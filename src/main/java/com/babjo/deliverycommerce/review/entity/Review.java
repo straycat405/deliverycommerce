@@ -17,7 +17,7 @@ public class Review extends BaseEntity {
     private UUID reviewId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
 
     // [TODO] Order 도메인 연결 후 주석 해제

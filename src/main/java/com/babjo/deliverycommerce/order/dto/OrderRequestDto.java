@@ -32,6 +32,9 @@ public class OrderRequestDto {
         @NotNull(message = "상품 ID는 필수입니다.")
         private UUID productId;
 
+        @NotNull(message = "메뉴 이름은 필수입니다.")
+        private String productName;
+
         @Min(value = 1, message = "수량은 1개 이상이어야 합니다.")
         private Integer orderCount;
 

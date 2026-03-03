@@ -33,8 +33,9 @@ public class OrderResponseDto {
     public static class OrderItemResponse{
         private Long id;
         private UUID productId;
+        private String productName;
         private Integer orderPrice;
-        private Integer count;
+        private Integer orderCount;
 
     }
 }

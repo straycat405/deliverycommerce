@@ -122,10 +122,22 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     // DB 조회 없이 Claims에서 직접 Authentication 생성
+    /**
+     *  생성토큰 소비 시 계약 위반 현상 발견 (20260303)
+     *  기존 String role = claims.get("role", String.class)
+     *  발급 > "auth" / 소비 > "role" 불일치로 role == null 상황이었음
+     *  변경지점 일치로 해결
+     */
+
+
     private Authentication createAuthentication(Claims claims) {
         Long userId = Long.parseLong(claims.getSubject());      // subject = userId
         String username = claims.get("username", String.class); // JWT payload의 username
-        String role = claims.get("role", String.class);         // JWT payload의 role
+        String role = claims.get(JwtUtil.AUTHORIZATION_KEY, String.class);         // JWT payload의 role
+
+        if (role == null) {
+            throw new CustomException(ErrorCode.INVALID_TOKEN);
+        }
 
         List<GrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + role)

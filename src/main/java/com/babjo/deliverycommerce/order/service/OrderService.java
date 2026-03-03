@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -40,6 +41,12 @@ public class OrderService {
         return convertToResponseDto(savedOrder);
     }
 
+    public OrderResponseDto getOrderDetails(UUID orderId){
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+        return convertToResponseDto(order);
+    }
+
     private OrderResponseDto convertToResponseDto(Order order){
         List<OrderResponseDto.OrderItemResponse> itemResponses = order.getOrderItems().stream()
                 .map(item -> OrderResponseDto.OrderItemResponse.builder()
@@ -62,4 +69,6 @@ public class OrderService {
                 .createdAt(order.getCreatedAt())
                 .build();
     }
+
+
 }

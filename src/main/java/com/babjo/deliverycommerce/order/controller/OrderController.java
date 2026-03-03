@@ -29,5 +29,12 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-
+    // 주문 상세 조회 GET /v1/orders/{orderId}
+    @GetMapping("/{orderId}")
+    public ResponseEntity<OrderResponseDto> getOrder(
+            @PathVariable UUID orderId
+    ){
+        OrderResponseDto response = orderService.getOrderDetails(orderId);
+        return ResponseEntity.ok(response);
+    }
 }

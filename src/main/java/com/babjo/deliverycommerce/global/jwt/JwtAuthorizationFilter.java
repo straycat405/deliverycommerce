@@ -125,7 +125,8 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     private Authentication createAuthentication(Claims claims) {
         Long userId = Long.parseLong(claims.getSubject());      // subject = userId
         String username = claims.get("username", String.class); // JWT payload의 username
-        String role = claims.get("role", String.class);         // JWT payload의 role
+        String role = claims.get(JwtUtil.AUTHORIZATION_KEY, String.class); // 수정: 토큰 생성 시 사용한 claim 키(auth)와 일치시킴
+                                                                          // JWT payload의 role
 
         List<GrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority("ROLE_" + role)

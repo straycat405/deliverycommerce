@@ -1,8 +1,6 @@
 # docker-compose.yml (로컬 개발용)
 # RDS/ELastiCache는 Docker로 띄우지 않습니다
 
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16

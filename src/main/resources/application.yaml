@@ -19,6 +19,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
+      timeout: 2000
 
 # JWT
 jwt:

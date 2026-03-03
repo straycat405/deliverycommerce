@@ -3,6 +3,8 @@ package com.babjo.deliverycommerce.global.exception;
 import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -56,6 +58,21 @@ public class GlobalExceptionHandler {
         // ResponseEntity.status().body()를 생략하고 바로 반환
         return ApiResponse.error(ErrorCode.INVALID_INPUT, message);
     }
+
+    // @PreAuthorize 권한 거부
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<?>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+        log.warn("[AuthorizationDeniedException] message={}", e.getMessage());
+        return ApiResponse.error(ErrorCode.FORBIDDEN);
+    }
+
+    // 기타 접근 거부 (Filter레벨)
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<?>> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("[AccessDeniedException] message={}", e.getMessage());
+        return ApiResponse.error(ErrorCode.FORBIDDEN);
+    }
+
     // 나머지 예상 못한 예외상황
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<?>> unhandledException(Exception e) {

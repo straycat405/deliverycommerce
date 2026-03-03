@@ -15,7 +15,7 @@ public interface ProductService {
     ProductResponseDto update(UUID productId, ProductUpdateRequestDto request);
     void delete(UUID productId, Long userId);
 
-    ProductResponseDto geberateDescription(UUID productId, String point);
+    ProductResponseDto generateDescription(UUID productId, String point);
 
     void hide(UUID productId);
     void show(UUID productId);

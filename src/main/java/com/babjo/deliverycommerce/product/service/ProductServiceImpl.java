@@ -114,7 +114,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponseDto geberateDescription(UUID productId, String point) {
+    public ProductResponseDto generateDescription(UUID productId, String point) {
 
         Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));

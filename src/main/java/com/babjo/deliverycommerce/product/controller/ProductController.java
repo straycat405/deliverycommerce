@@ -57,7 +57,7 @@ public class ProductController {
     @PostMapping("/{productId}/ai-description")
     public ResponseEntity<ProductResponseDto> generateAiDescription(@PathVariable UUID productId, @RequestBody AiDescriptionRequestDto request) {
         return ResponseEntity.ok(
-                productService.geberateDescription(productId, request.getPoint())
+                productService.generateDescription(productId, request.getPoint())
         );
     }
 

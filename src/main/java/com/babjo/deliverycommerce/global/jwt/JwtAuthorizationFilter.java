@@ -57,18 +57,29 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         try {
             String tokenValue = jwtUtil.subStringToken(header);
 
-            // Blacklist 체크 - 로그아웃된 토큰 차단
-            if (redisUtil.hasKey(RedisKeys.blacklistKey(tokenValue))) {
-                log.warn("[JWT] 블랙리스트 토큰 차단");
+            // Blacklist 체크 - 로그아웃된 토큰 차단 (Redis 실패 시 Fail-Fast)
+            try {
+                if (redisUtil.hasKey(RedisKeys.blacklistKey(tokenValue))) {
+                    log.warn("[JWT] 블랙리스트 토큰 차단");
 
-                res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    res.setContentType("application/json;charset=UTF-8");
+                    //ApiResponse 형식으로 변환
+                    res.getWriter().write(
+                            objectMapper.writeValueAsString(ApiResponse.errorBody(ErrorCode.TOKEN_BLACKLISTED))
+                    );
+                    return;
+                }
+            } catch (CustomException e) {
+                log.error("[JWT] Redis 오류로 블랙리스트 확인 불가 - {}", e.getMessage());
+                res.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 res.setContentType("application/json;charset=UTF-8");
-                //ApiResponse 형식으로 변환
                 res.getWriter().write(
-                        objectMapper.writeValueAsString(ApiResponse.errorBody(ErrorCode.TOKEN_BLACKLISTED))
+                        objectMapper.writeValueAsString(ApiResponse.errorBody(ErrorCode.REDIS_OPERATION_FAILED))
                 );
                 return;
             }
+
 
             // 내부에서 파싱 + 서명 검증 동시 수행
             // 만료 / 위변조 시 CustomException 발생

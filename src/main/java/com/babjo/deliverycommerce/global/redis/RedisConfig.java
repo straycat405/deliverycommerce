@@ -11,10 +11,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 public class RedisConfig {
 
-    @Value("${REDIS_HOST}")
+    // .env (환경변수) -> yaml -> @Value순으로 값 흐름 지정
+    @Value("${spring.data.redis.host}")
     private String host;
 
-    @Value("${REDIS_PORT}")
+    @Value("${spring.data.redis.port}")
     private int port;
 
     /**

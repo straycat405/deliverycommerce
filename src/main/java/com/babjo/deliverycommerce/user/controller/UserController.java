@@ -103,4 +103,24 @@ public class UserController {
         // 응답 반환
         return ApiResponse.ok("로그아웃 성공",null);
     }
+
+    @PostMapping("/reissue")
+    public ResponseEntity<ApiResponse<LoginResponseDto>> reissue(
+            @CookieValue(name = "refresh_token", required = false) String refreshToken,
+            HttpServletResponse response
+    ) {
+        LoginResponseDto reissueResponse = userService.reissue(refreshToken);
+
+        // Http Cookie 설정
+        ResponseCookie cookie = ResponseCookie.from("refresh_token", reissueResponse.getRefreshToken())
+                .httpOnly(true)
+                .path("/")
+                .maxAge(jwtUtil.getRefreshExpiration() / 1000)
+                .sameSite("Strict")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        return ApiResponse.ok("토큰 재발급 성공", reissueResponse);
+    }
 }

@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRespository productRespository;
+    private final AiDescriptionService aiDescriptionService;
+
     // AI 이후 연결
 
     // 상품 생성
@@ -54,7 +56,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponseDto get(UUID productId) {
 
         Product product = productRespository
-                .findByProductIdAndDeletedAtIsNll(productId)
+                .findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         return ProductResponseDto.from(product);
@@ -78,7 +80,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponseDto update(UUID productId, ProductUpdateRequestDto request) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         String description = request.getDescription();
@@ -104,7 +106,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void delete(UUID productId, Long userId) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.delete(userId);
@@ -112,8 +114,22 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    public ProductResponseDto geberateDescription(UUID productId, String point) {
+
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
+                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+
+        String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
+
+        product.updateDescription(aiDescription);
+
+        return ProductResponseDto.from(product);
+    }
+
+    @Override
+    @Transactional
     public void hide(UUID productId) {
-        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.hide();
@@ -122,7 +138,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void show(UUID productId) {
-        Product product = productRespository.findByProductIdAndDeletedAtIsNll(productId)
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         product.show();

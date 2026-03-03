@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.product.controller;
 
+import com.babjo.deliverycommerce.product.dto.AiDescriptionRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
@@ -51,6 +52,13 @@ public class ProductController {
 
         productService.delete(productId, tempUserId);
         return ResponseEntity.noContent().build();  // 성공적으로 삭제 시 204 No Content
+    }
+
+    @PostMapping("/{productId}/ai-description")
+    public ResponseEntity<ProductResponseDto> generateAiDescription(@PathVariable UUID productId, @RequestBody AiDescriptionRequestDto request) {
+        return ResponseEntity.ok(
+                productService.geberateDescription(productId, request.getPoint())
+        );
     }
 
     // hide, show 를 좋아요, 좋아요 취소 처럼 하나의 API로 수정 예정

@@ -12,7 +12,7 @@ public interface ProductRespository extends JpaRepository<Product, UUID> {
     // Store 연결되면 findAllByStore_StoreIdAndDeletedAtIsNull() 형태로 확장
 
     // 단건 조회(삭제 제외)
-    Optional<Product> findByProductIdAndDeletedAtIsNll(UUID productId);
+    Optional<Product> findByProductIdAndDeletedAtIsNull(UUID productId);
 
     // 가게별 전체 조회(삭제 제회)
     List<Product> findAllByDeletedAtIsNull();

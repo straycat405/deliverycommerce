@@ -32,7 +32,7 @@ public class Product extends BaseEntity {
     @Column(name = "price", nullable = false)
     private Integer price;
 
-    @Column(name = "description", nullable = false, length = 255)   // 255 부족할 경우 TEXT로 수정 예정
+    @Column(name = "description", nullable = true, columnDefinition = "TEXT")   // 255 부족할 경우 TEXT로 수정 예정
     private String description;
 
     @Column(name = "product_hide", nullable = false)
@@ -49,6 +49,11 @@ public class Product extends BaseEntity {
         this.price = price;
         this.description = description;
         this.productCategory = productCategory;
+    }
+
+    public void updateDescription(String description) {
+        this.description = description;
+        this.useAiDescription = true;
     }
 
     public void hide() {

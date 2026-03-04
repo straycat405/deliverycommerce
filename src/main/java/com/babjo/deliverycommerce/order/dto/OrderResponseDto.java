@@ -21,8 +21,9 @@ public class OrderResponseDto {
     private String address;
     private String message;
     private List<OrderItemResponse> orderItems;
-
     private LocalDateTime createdAt;
+    private Integer cookingMinutes;
+    private Long acceptedBy;
     private LocalDateTime acceptedAt;
     private LocalDateTime canceledAt;
     private Long canceledBy;

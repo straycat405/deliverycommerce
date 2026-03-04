@@ -11,6 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -45,6 +46,7 @@ public class OrderController {
     // 사용자의 주문 내역 조회
     @GetMapping
     public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
+            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
             @RequestHeader(name = "UserId") Long userId,
             // default size 10
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
@@ -56,12 +58,25 @@ public class OrderController {
     // 주문 취소 PATCH /v1/orders/{orderId}/cancel
     @PatchMapping("/{orderId}/cancel")
     public ResponseEntity<Void> cancelOrder(
+            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
             @RequestHeader(name = "UserId")Long userId,
             @PathVariable UUID orderId,
             @RequestParam String reason
     ){
         orderService.cancelOrder(orderId,userId, reason);
         return ResponseEntity.noContent().build();
+    }
+
+    // 주문 접수
+    @PatchMapping("/{orderId}/accept")
+    public ResponseEntity<OrderResponseDto> acceptOrder(
+            @PathVariable UUID orderId,
+            @RequestBody OrderRequestDto.AcceptOrder request,
+            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
+            @RequestHeader(name = "OwnerId") Long ownerId
+    ){
+        OrderResponseDto response = orderService.acceptOrder(orderId, ownerId, request);
+        return ResponseEntity.ok(response);
     }
 
 }

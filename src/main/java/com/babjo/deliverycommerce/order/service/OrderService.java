@@ -25,12 +25,21 @@ public class OrderService {
     @Transactional
     public OrderResponseDto createOrder(Long userId, OrderRequestDto.CreateOrder request){
         List<OrderItem> orderItems = request.getOrderItems().stream()
-                .map(itemDto -> OrderItem.createOrderItem(
+                .map(itemDto ->{
+//                      TODO : Product 작업 완료시 상품 검증 로직 활성화
+//                      Product product = productRepository.findById(itemDto.getProductId())
+//                                      .orElse.Throw(() -> new IllegalArgumentException("상품 없음"));
+//                      if(product.getPrice() != itemDto.getOrderPrice()){
+//                          throw new IllegalArgumentException("가격 불일치");
+//                      }
+
+                        return OrderItem.createOrderItem(
                         itemDto.getProductId(),
                         itemDto.getProductName(),
                         itemDto.getOrderPrice(),
                         itemDto.getOrderCount()
-                ))
+                        );
+                })
                 .toList();
         Order order = Order.createOrder(
                 userId,
@@ -75,6 +84,15 @@ public class OrderService {
 
     }
 
+    // 주문 접수
+    @Transactional
+    public OrderResponseDto acceptOrder(UUID orderId, Long ownerID, OrderRequestDto.AcceptOrder request){
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+            order.accept(ownerID, request.getCookingMinutes());
+            return convertToResponseDto(order);
+    }
+
     private OrderResponseDto convertToResponseDto(Order order){
         List<OrderResponseDto.OrderItemResponse> itemResponses = order.getOrderItems().stream()
                 .map(item -> OrderResponseDto.OrderItemResponse.builder()
@@ -98,6 +116,9 @@ public class OrderService {
                 .cancelReason(order.getCancelReason())
                 .canceledAt(order.getCanceledAt())
                 .canceledBy(order.getCanceledBy())
+                .cookingMinutes(order.getCookingMinutes())
+                .acceptedBy(order.getAcceptedBy())
+                .acceptedAt(order.getAcceptedAt())
                 .build();
     }
 

@@ -40,8 +40,13 @@ public class OrderRequestDto {
 
         @NotNull(message = "가격 정보가 없습니다.")
         private Integer orderPrice;
+    }
 
-
+    @Getter
+    @NoArgsConstructor
+    public static class AcceptOrder {
+        @Min(value = 5, message = "조리 시간은 최소 5분 이상 입력해야 합니다.")
+        private Integer cookingMinutes;
     }
 
 }

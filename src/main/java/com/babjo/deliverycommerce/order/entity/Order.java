@@ -48,6 +48,8 @@ public class Order extends BaseEntity {
 
     private String cancelReason;
 
+    private Long acceptedBy;
+
     private LocalDateTime acceptedAt;
 
     private Integer cookingMinutes;
@@ -91,9 +93,17 @@ public class Order extends BaseEntity {
         this.canceledBy = userId;
         this.cancelReason = reason;
     }
-    public void accept(Integer cookingMinutes){
+    public void accept(Long ownerId, Integer cookingMinutes){
+        if(this.status != OrderStatus.CREATED){
+            throw new IllegalStateException("접수할 수 없는 주문 상태입니다.");
+        }
+        if(cookingMinutes == null || cookingMinutes <= 0){
+            throw new IllegalArgumentException("올바른 조리 시간을 입력해주세요.");
+        }
+
         this.status = OrderStatus.ACCEPTED;
         this.acceptedAt = LocalDateTime.now();
+        this.acceptedBy = ownerId;
         this.cookingMinutes = cookingMinutes;
     }
 }

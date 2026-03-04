@@ -1,7 +1,10 @@
 package com.babjo.deliverycommerce.review.controller;
 
-import com.babjo.deliverycommerce.review.dto.*;
-import com.babjo.deliverycommerce.review.service.ReviewService;
+import com.babjo.deliverycommerce.domain.review.controller.ReviewController;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
+import com.babjo.deliverycommerce.domain.review.service.ReviewService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

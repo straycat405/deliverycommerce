@@ -1,10 +1,10 @@
-package com.babjo.deliverycommerce.review.mapper;
+package com.babjo.deliverycommerce.domain.review.mapper;
 
-import com.babjo.deliverycommerce.review.dto.ReviewCreateResponse;
-import com.babjo.deliverycommerce.review.dto.ReviewResponse;
-import com.babjo.deliverycommerce.review.dto.ReviewUpdateResponse;
-import com.babjo.deliverycommerce.review.entity.Review;
-import com.babjo.deliverycommerce.review.dto.ReviewCreateRequest;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
+import com.babjo.deliverycommerce.domain.review.entity.Review;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateRequest;
 import org.springframework.stereotype.Component;
 
 @Component

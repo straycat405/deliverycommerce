@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.review.entity;
+package com.babjo.deliverycommerce.domain.review.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import com.babjo.deliverycommerce.user.entity.User;

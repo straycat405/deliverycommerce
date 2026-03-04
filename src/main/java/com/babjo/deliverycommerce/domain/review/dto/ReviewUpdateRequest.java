@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.review.dto;
+package com.babjo.deliverycommerce.domain.review.dto;
 
 import lombok.Data;
 import jakarta.validation.constraints.Min;

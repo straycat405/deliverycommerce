@@ -1,13 +1,13 @@
-package com.babjo.deliverycommerce.review.service;
+package com.babjo.deliverycommerce.domain.review.service;
 
-import com.babjo.deliverycommerce.review.dto.ReviewCreateRequest;
-import com.babjo.deliverycommerce.review.dto.ReviewCreateResponse;
-import com.babjo.deliverycommerce.review.dto.ReviewResponse;
-import com.babjo.deliverycommerce.review.dto.ReviewUpdateRequest;
-import com.babjo.deliverycommerce.review.dto.ReviewUpdateResponse;
-import com.babjo.deliverycommerce.review.entity.Review;
-import com.babjo.deliverycommerce.review.mapper.ReviewMapper;
-import com.babjo.deliverycommerce.review.repository.ReviewRepository;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateRequest;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateRequest;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
+import com.babjo.deliverycommerce.domain.review.entity.Review;
+import com.babjo.deliverycommerce.domain.review.mapper.ReviewMapper;
+import com.babjo.deliverycommerce.domain.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

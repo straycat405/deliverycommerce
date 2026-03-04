@@ -1,13 +1,14 @@
-package com.babjo.deliverycommerce.review.controller;
+package com.babjo.deliverycommerce.domain.review.controller;
 
 import java.util.List;
 import java.util.UUID;
+
+import com.babjo.deliverycommerce.domain.review.dto.*;
 import com.babjo.deliverycommerce.review.dto.*;
-import com.babjo.deliverycommerce.review.service.ReviewService;
+import com.babjo.deliverycommerce.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

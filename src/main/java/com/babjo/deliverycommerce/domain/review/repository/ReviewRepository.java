@@ -1,6 +1,6 @@
-package com.babjo.deliverycommerce.review.repository;
+package com.babjo.deliverycommerce.domain.review.repository;
 
-import com.babjo.deliverycommerce.review.entity.Review;
+import com.babjo.deliverycommerce.domain.review.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,5 +1,7 @@
 package com.babjo.deliverycommerce.product.service;
 
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
@@ -8,8 +10,6 @@ import com.babjo.deliverycommerce.product.entity.Product;
 import com.babjo.deliverycommerce.product.repository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,20 +26,12 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRespository productRespository;
     private final AiDescriptionService aiDescriptionService;
 
-    // AI 이후 연결
-
     // 상품 생성
     @Override
     @Transactional
     public ProductResponseDto create(ProductCreateRequestDto request) {
 
         String description = request.getDescription();
-
-        // AI 사용 시
-        if (Boolean.TRUE.equals(request.getUseAiDescription())) {
-            // AI 코드 추가
-            description = "AI 생성 설명(임시)";
-        }
 
         Product product = Product.builder()
                 .name(request.getName())
@@ -58,13 +50,11 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponseDto get(UUID productId, UserPrincipal user) {
 
-        Product product = productRespository
-                .findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         // CUSTOMER는 숨김 상품 조회 불가
         if(user.getRole().equals("CUSTOMER") && product.isProductHide()) {
-            throw new IllegalArgumentException("상품이 존재하지 않습니다.");
+            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
         }
 
         return ProductResponseDto.from(product);
@@ -108,13 +98,12 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
     }
 
-    // 수정
+    // 수정 >> Store과 연결 후 본인 store만 수정할 수 있게 변경
     @Override
     @Transactional
     public ProductResponseDto update(UUID productId, ProductUpdateRequestDto request) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         String description = request.getDescription();
 
@@ -133,8 +122,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public void delete(UUID productId, Long userId) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         product.delete(userId);
     }
@@ -143,8 +131,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponseDto generateDescription(UUID productId, String point) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
 
@@ -156,8 +143,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void hide(UUID productId) {
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         product.hide();
     }
@@ -165,9 +151,20 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void show(UUID productId) {
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
-                .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
+        Product product = getActiveProduct(productId);
 
         product.show();
+    }
+
+    private Product getActiveProduct(UUID productId) {
+
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if(product.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.PRODUCT_DELETED);
+        }
+
+        return product;
     }
 }

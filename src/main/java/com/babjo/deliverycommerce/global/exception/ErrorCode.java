@@ -48,10 +48,14 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
 
     // ── Infrastructure  ─────────────────────
-    REDIS_OPERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "REDIS_OPERATION_FAILED", "인증 처리 중 오류가 발생했습니다.");
+    REDIS_OPERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "REDIS_OPERATION_FAILED", "인증 처리 중 오류가 발생했습니다."),
 
     // ── Store / Product / Order / Payment / Review ────
     // 각 도메인 담당자가 PR로 추가
+
+    // ── Product  ──────────────────────────────────────────
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
+    PRODUCT_DELETED(HttpStatus.GONE, "PRODUCT_DELETED", "삭제된 상품입니다.");
 
     private final HttpStatus status;
     private final String code;

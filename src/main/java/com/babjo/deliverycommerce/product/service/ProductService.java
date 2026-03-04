@@ -4,6 +4,7 @@ import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
+import com.babjo.deliverycommerce.product.entity.Product;
 
 import java.util.List;
 import java.util.UUID;

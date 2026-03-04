@@ -3,12 +3,14 @@ package com.babjo.deliverycommerce.domain.review.entity;
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import com.babjo.deliverycommerce.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @Table(name = "p_review")
 public class Review extends BaseEntity {
 

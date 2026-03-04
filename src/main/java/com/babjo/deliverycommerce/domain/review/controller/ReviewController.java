@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 import com.babjo.deliverycommerce.domain.review.dto.*;
-import com.babjo.deliverycommerce.review.dto.*;
 import com.babjo.deliverycommerce.domain.review.service.ReviewService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

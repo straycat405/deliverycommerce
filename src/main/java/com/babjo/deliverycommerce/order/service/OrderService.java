@@ -95,6 +95,9 @@ public class OrderService {
                 .message(order.getMessage())
                 .orderItems(itemResponses)
                 .createdAt(order.getCreatedAt())
+                .cancelReason(order.getCancelReason())
+                .canceledAt(order.getCanceledAt())
+                .canceledBy(order.getCanceledBy())
                 .build();
     }
 

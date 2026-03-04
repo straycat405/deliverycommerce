@@ -25,6 +25,7 @@ public class OrderResponseDto {
     private LocalDateTime createdAt;
     private LocalDateTime acceptedAt;
     private LocalDateTime canceledAt;
+    private Long canceledBy;
     private String cancelReason;
 
     @Getter

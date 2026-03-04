@@ -87,6 +87,29 @@ class ReviewServiceTest {
     }
 
     @Test
+    void createReview_성공_store_통계_갱신됨() {
+        // given
+        ReviewCreateRequest request = new ReviewCreateRequest();
+
+        ReviewCreateResponse expectedResponse = new ReviewCreateResponse();
+        expectedResponse.setRating(4);
+        expectedResponse.setContent("맛있어요");
+
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.of(store));
+        given(reviewMapper.toEntity(any(), any())).willReturn(review);
+        given(reviewRepository.save(any())).willReturn(review);
+        given(reviewMapper.toCreateResponse(any())).willReturn(expectedResponse);
+
+        // when
+        reviewService.createReview(principal, request);
+
+        // then — store 통계가 갱신되고 저장되어야 함
+        assertThat(store.getReviewCount()).isEqualTo(1);
+        assertThat(store.getAverageRating()).isEqualTo(4.0);
+        verify(storeRepository, times(1)).save(store);
+    }
+
+    @Test
     void createReview_실패_존재하지_않는_가게() {
         // given
         ReviewCreateRequest request = new ReviewCreateRequest();
@@ -221,7 +244,10 @@ class ReviewServiceTest {
     void updateReview_성공() {
         // given
         UUID reviewId = UUID.randomUUID();
-        ReviewUpdateRequest request = new ReviewUpdateRequest();
+
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+        given(request.getRating()).willReturn(5);
+        given(request.getContent()).willReturn("정말 맛있어요");
 
         ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
         expectedResponse.setReviewId(reviewId);
@@ -241,10 +267,63 @@ class ReviewServiceTest {
     }
 
     @Test
+    void updateReview_별점_변경_시_store_통계_갱신됨() {
+        // given
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4); // count=1, avg=4.0
+        // review.rating=4 (setUp에서 Review.create(store, 4, ...))
+
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+        given(request.getRating()).willReturn(2); // 4 → 2로 변경
+        given(request.getContent()).willReturn("별로에요");
+
+        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
+        expectedResponse.setReviewId(reviewId);
+        expectedResponse.setRating(2);
+        expectedResponse.setContent("별로에요");
+
+        given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+        given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
+
+        // when
+        reviewService.updateReview(principal, reviewId, request);
+
+        // then — 4 → 2 변경: avg = 4.0 + (2 - 4) / 1 = 2.0
+        assertThat(store.getReviewCount()).isEqualTo(1);
+        assertThat(store.getAverageRating()).isEqualTo(2.0);
+        verify(storeRepository, times(1)).save(store);
+    }
+
+    @Test
+    void updateReview_별점_동일하면_store_저장_생략() {
+        // given
+        UUID reviewId = UUID.randomUUID();
+        // review.rating = 4 (setUp)
+
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+        given(request.getRating()).willReturn(4);  // oldRating == newRating
+        given(request.getContent()).willReturn("내용만 수정");
+
+        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
+        expectedResponse.setReviewId(reviewId);
+        expectedResponse.setRating(4);
+        expectedResponse.setContent("내용만 수정");
+
+        given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+        given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
+
+        // when
+        reviewService.updateReview(principal, reviewId, request);
+
+        // then — 별점 변경 없으므로 storeRepository.save 호출되지 않아야 함
+        verify(storeRepository, never()).save(any());
+    }
+
+    @Test
     void updateReview_실패_존재하지_않는_리뷰() {
         // given
         UUID reviewId = UUID.randomUUID();
-        ReviewUpdateRequest request = new ReviewUpdateRequest();
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
 
         given(reviewRepository.findById(reviewId)).willReturn(Optional.empty());
 
@@ -270,10 +349,26 @@ class ReviewServiceTest {
         reviewService.deleteReview(reviewId, principal);
 
         // then
-        // delete() 호출 후 deletedAt이 설정되었는지 확인
         assertThat(review.getDeletedAt()).isNotNull();
         assertThat(review.getDeletedBy()).isEqualTo(principal.getUserId());
         verify(reviewRepository, times(1)).save(review);
+    }
+
+    @Test
+    void deleteReview_성공_store_통계_갱신됨() {
+        // given
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4); // 미리 1개 등록 (count=1, avg=4.0)
+
+        given(reviewRepository.findById(reviewId)).willReturn(Optional.of(review));
+
+        // when
+        reviewService.deleteReview(reviewId, principal);
+
+        // then — 삭제 후 count=0, avg=0.0
+        assertThat(store.getReviewCount()).isEqualTo(0);
+        assertThat(store.getAverageRating()).isEqualTo(0.0);
+        verify(storeRepository, times(1)).save(store);
     }
 
     @Test

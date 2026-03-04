@@ -9,6 +9,10 @@ spring:
       ddl-auto: none
   config:
     import: optional:file:.env[.properties]
+  security:
+    user:
+      name: unused
+      password: unused
 
   data:
     redis:

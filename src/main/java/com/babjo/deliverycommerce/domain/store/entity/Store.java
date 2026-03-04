@@ -48,6 +48,26 @@ public class Store extends BaseEntity {
         return store;
     }
 
+    public void addReview(int rating) {
+        this.averageRating = (this.averageRating * this.reviewCount + rating) / (this.reviewCount + 1.0);
+        this.reviewCount += 1;
+    }
+
+    public void removeReview(int rating) {
+        if (this.reviewCount <= 1) {
+            this.reviewCount = 0;
+            this.averageRating = 0.0;
+            return;
+        }
+        this.averageRating = (this.averageRating * this.reviewCount - rating) / (this.reviewCount - 1.0);
+        this.reviewCount -= 1;
+    }
+
+    public void updateReviewRating(int oldRating, int newRating) {
+        if (this.reviewCount == 0) return;
+        this.averageRating = this.averageRating + (double) (newRating - oldRating) / this.reviewCount;
+    }
+
     public void update(String category, String name, String address) {
         if (category != null) {
             this.category = category;

@@ -70,6 +70,9 @@ public class ReviewService {
         );
         Review savedReview = reviewRepository.save(review);
 
+        store.addReview(savedReview.getRating());
+        storeRepository.save(store);
+
         return reviewMapper.toCreateResponse(savedReview);
     }
 
@@ -108,6 +111,10 @@ public class ReviewService {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
+        Store store = review.getStore();
+        store.removeReview(review.getRating());
+        storeRepository.save(store);
+
         review.delete(principal.getUserId());
         reviewRepository.save(review);
     }
@@ -127,8 +134,17 @@ public class ReviewService {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
+        int oldRating = review.getRating();
+
         // 수정 처리 (updatedAt은 @LastModifiedDate 로 자동 갱신)
         review.updateReview(updateRequest.getRating(), updateRequest.getContent());
+
+        // 별점이 변경된 경우에만 Store 통계 갱신 (null-safe: @Valid로 보장되나 방어적 처리)
+        if (updateRequest.getRating() != null && oldRating != updateRequest.getRating()) {
+            Store store = review.getStore();
+            store.updateReviewRating(oldRating, updateRequest.getRating());
+            storeRepository.save(store);
+        }
 
         return reviewMapper.toUpdateResponse(review);
     }

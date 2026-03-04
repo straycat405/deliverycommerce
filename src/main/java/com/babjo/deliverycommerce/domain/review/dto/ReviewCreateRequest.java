@@ -1,15 +1,17 @@
 package com.babjo.deliverycommerce.domain.review.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
- import jakarta.validation.constraints.NotNull;
- import jakarta.validation.constraints.Min;
- import jakarta.validation.constraints.Max;
- import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotBlank;
 
-@Data
+@Getter
+@NoArgsConstructor
 public class ReviewCreateRequest {
     @NotNull
     private UUID orderId;

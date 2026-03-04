@@ -5,55 +5,56 @@ import java.util.UUID;
 
 import com.babjo.deliverycommerce.domain.review.dto.*;
 import com.babjo.deliverycommerce.domain.review.service.ReviewService;
+import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/v1/reviews")
+@RequiredArgsConstructor
 public class ReviewController {
 
-    @Autowired
-    private ReviewService reviewService;
+    private final ReviewService reviewService;
 
-    @ResponseStatus(HttpStatus.CREATED)
     @PostMapping
-    public ReviewCreateResponse createReview(
-//            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid
-            @RequestBody ReviewCreateRequest request
+    @PreAuthorize("hasRole('CUSTOMER')")
+    public ResponseEntity<ApiResponse<ReviewCreateResponse>> createReview(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody ReviewCreateRequest request
     ) {
-        return reviewService.createReview(
-//                userDetails.getUserId(),
-                request
-        );
+        return ApiResponse.created("리뷰 생성 성공", reviewService.createReview(principal, request));
     }
 
     @PutMapping("/{reviewId}")
-    public ReviewUpdateResponse updateReview(
-//            @AuthenticationPrincipal CustomUserDetails userDetails,
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'MASTER')")
+    public ResponseEntity<ApiResponse<ReviewUpdateResponse>> updateReview(
+            @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID reviewId,
-            @Valid
-            @RequestBody ReviewUpdateRequest request
+            @Valid @RequestBody ReviewUpdateRequest request
     ) {
-        return reviewService.updateReview(
-//                userDetails.getUserId(),
-                reviewId,
-                request
-        );
+        return ApiResponse.ok("리뷰 수정 성공", reviewService.updateReview(principal, reviewId, request));
     }
 
     @GetMapping
-    public List<ReviewResponse> getReviews(
+    public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviews(
             @RequestParam(required = false) UUID reviewId,
             @RequestParam(required = false) UUID storeId
     ) {
-        return reviewService.getReviews(reviewId, storeId);
+        return ApiResponse.ok("리뷰 조회 성공", reviewService.getReviews(reviewId, storeId));
     }
 
     @DeleteMapping("/{reviewId}")
-    public void deleteReview(@PathVariable UUID reviewId) {
-        reviewService.deleteReview(reviewId);
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'MASTER')")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID reviewId
+    ) {
+        reviewService.deleteReview(reviewId, principal);
+        return ApiResponse.ok("리뷰 삭제 성공", null);
     }
 }

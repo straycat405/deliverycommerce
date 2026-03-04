@@ -30,13 +30,13 @@ public class ReviewMapper {
 //            Order order,
             Store store
     ) {
-        Review review = new Review();
-//        review.setUser(user);
-//        review.setOrder(order);
-        review.setStore(store);
-        review.setRating(createRequest.getRating());
-        review.setContent(createRequest.getContent());
-        return review;
+        return Review.create(
+//                user,
+//                order,
+                store,
+                createRequest.getRating(),
+                createRequest.getContent()
+        );
     }
 
     public ReviewCreateResponse toCreateResponse(Review review) {

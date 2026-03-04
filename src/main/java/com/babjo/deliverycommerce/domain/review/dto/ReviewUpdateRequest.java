@@ -1,14 +1,15 @@
 package com.babjo.deliverycommerce.domain.review.dto;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 
-@Data
+@Getter
+@NoArgsConstructor
 public class ReviewUpdateRequest {
-    // [수정] @NotNull, @Min(1), @Max(5) 추가 필요
     @NotNull
     @Min(1)
     @Max(5)

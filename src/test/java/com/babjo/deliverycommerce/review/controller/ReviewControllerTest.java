@@ -5,12 +5,16 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.service.ReviewService;
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -21,6 +25,7 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,10 +40,19 @@ class ReviewControllerTest {
     @InjectMocks
     private ReviewController reviewController;
 
+    private UserPrincipal customerPrincipal;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(reviewController).build();
+
+        customerPrincipal = new UserPrincipal(1L, "testuser", "CUSTOMER");
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                customerPrincipal, null,
+                List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     // ───────────────────────────────────────────────
@@ -59,7 +73,7 @@ class ReviewControllerTest {
         response.setContent("맛있어요");
         response.setCreatedAt(LocalDateTime.now());
 
-        when(reviewService.createReview(any())).thenReturn(response);
+        when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
 
         String requestBody = String.format("""
                 {
@@ -74,24 +88,23 @@ class ReviewControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.reviewId").value(reviewId.toString()))
-                .andExpect(jsonPath("$.orderId").value(orderId.toString()))
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.rating").value(4))
-                .andExpect(jsonPath("$.content").value("맛있어요"));
+                .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data.orderId").value(orderId.toString()))
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.rating").value(4))
+                .andExpect(jsonPath("$.data.content").value("맛있어요"));
 
-        verify(reviewService, times(1)).createReview(any());
+        verify(reviewService, times(1)).createReview(any(UserPrincipal.class), any());
     }
 
     @Test
     void createReview_유효성검사_실패_필수필드_누락() throws Exception {
-        // orderId, storeId, rating, content 모두 누락
         mockMvc.perform(post("/v1/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest());
 
-        verify(reviewService, never()).createReview(any());
+        verify(reviewService, never()).createReview(any(), any());
     }
 
     @Test
@@ -113,7 +126,7 @@ class ReviewControllerTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest());
 
-        verify(reviewService, never()).createReview(any());
+        verify(reviewService, never()).createReview(any(), any());
     }
 
     @Test
@@ -135,7 +148,7 @@ class ReviewControllerTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest());
 
-        verify(reviewService, never()).createReview(any());
+        verify(reviewService, never()).createReview(any(), any());
     }
 
     // ───────────────────────────────────────────────
@@ -152,7 +165,7 @@ class ReviewControllerTest {
         response.setContent("정말 맛있어요");
         response.setUpdatedAt(LocalDateTime.now());
 
-        when(reviewService.updateReview(any(), any())).thenReturn(response);
+        when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any())).thenReturn(response);
 
         String requestBody = """
                 {
@@ -165,11 +178,11 @@ class ReviewControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reviewId").value(reviewId.toString()))
-                .andExpect(jsonPath("$.rating").value(5))
-                .andExpect(jsonPath("$.content").value("정말 맛있어요"));
+                .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data.rating").value(5))
+                .andExpect(jsonPath("$.data.content").value("정말 맛있어요"));
 
-        verify(reviewService, times(1)).updateReview(any(), any());
+        verify(reviewService, times(1)).updateReview(any(UserPrincipal.class), eq(reviewId), any());
     }
 
     @Test
@@ -181,7 +194,7 @@ class ReviewControllerTest {
                         .content("{}"))
                 .andExpect(status().isBadRequest());
 
-        verify(reviewService, never()).updateReview(any(), any());
+        verify(reviewService, never()).updateReview(any(), any(), any());
     }
 
     @Test
@@ -200,7 +213,7 @@ class ReviewControllerTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest());
 
-        verify(reviewService, never()).updateReview(any(), any());
+        verify(reviewService, never()).updateReview(any(), any(), any());
     }
 
     // ───────────────────────────────────────────────
@@ -213,7 +226,7 @@ class ReviewControllerTest {
 
         mockMvc.perform(get("/v1/reviews"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.data", hasSize(0)));
 
         verify(reviewService, times(1)).getReviews(null, null);
     }
@@ -235,10 +248,10 @@ class ReviewControllerTest {
         mockMvc.perform(get("/v1/reviews")
                         .param("storeId", storeId.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$[0].rating").value(3))
-                .andExpect(jsonPath("$[0].content").value("보통이에요"));
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data[0].rating").value(3))
+                .andExpect(jsonPath("$.data[0].content").value("보통이에요"));
 
         verify(reviewService, times(1)).getReviews(null, storeId);
     }
@@ -251,11 +264,12 @@ class ReviewControllerTest {
     void deleteReview_성공() throws Exception {
         UUID reviewId = UUID.randomUUID();
 
-        doNothing().when(reviewService).deleteReview(any());
+        doNothing().when(reviewService).deleteReview(eq(reviewId), any(UserPrincipal.class));
 
         mockMvc.perform(delete("/v1/reviews/" + reviewId))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("리뷰 삭제 성공"));
 
-        verify(reviewService, times(1)).deleteReview(reviewId);
+        verify(reviewService, times(1)).deleteReview(eq(reviewId), any(UserPrincipal.class));
     }
 }

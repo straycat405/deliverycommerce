@@ -12,6 +12,7 @@ import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final StoreRepository storeRepository;
@@ -35,11 +36,12 @@ public class ReviewService {
 //    private final OrderRepository orderRepository;
     private final ReviewMapper reviewMapper;
 
+    @Transactional
     public ReviewCreateResponse createReview(
-//            Long userId,
+            UserPrincipal principal,
             ReviewCreateRequest createRequest
     ) {
-//        User user = userRepository.findById(userId)
+//        User user = userRepository.findById(principal.getUserId())
 //                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 //        Order order = orderRepository.findById(createRequest.getOrderId())
@@ -71,47 +73,48 @@ public class ReviewService {
         return reviewMapper.toCreateResponse(savedReview);
     }
 
-    @Transactional(readOnly = true)
     public List<ReviewResponse> getReviews(UUID reviewId, UUID storeId) {
         // [TODO] 인증 연결 후 userId 기반 필터 추가
 
         // reviewId가 있으면 단건 조회 (List 형태로 반환)
         if (reviewId != null) {
-            Review review = reviewRepository.findByReviewIdAndDeletedAtIsNull(reviewId)
+            Review review = reviewRepository.findByReviewId(reviewId)
                     .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
             return List.of(reviewMapper.toResponse(review));
         }
 
         // storeId 필터 목록 조회 - 가게별 리뷰 목록
         if (storeId != null) {
-            return reviewRepository.findAllByStore_StoreIdAndDeletedAtIsNull(storeId)
+            return reviewRepository.findAllByStore_StoreId(storeId)
                     .stream()
                     .map(reviewMapper::toResponse)
                     .collect(Collectors.toList());
         }
 
         // 전체 목록 조회
-        return reviewRepository.findAllByDeletedAtIsNull()
+        return reviewRepository.findAll()
                 .stream()
                 .map(reviewMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public void deleteReview(UUID reviewId) {
+    @Transactional
+    public void deleteReview(UUID reviewId, UserPrincipal principal) {
         Review review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getUserId().equals(userId)) {
+        // if (!review.getUser().getUserId().equals(principal.getUserId())) {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
-        // [TODO] 인증 연결 후 실제 userId 전달
-        review.delete(null);
+        review.delete(principal.getUserId());
+        reviewRepository.save(review);
     }
 
+    @Transactional
     public ReviewUpdateResponse updateReview(
-//            Long userId,
+            UserPrincipal principal,
             UUID reviewId,
             ReviewUpdateRequest updateRequest
     ) {
@@ -120,13 +123,12 @@ public class ReviewService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getUserId().equals(userId)) {
+        // if (!review.getUser().getUserId().equals(principal.getUserId())) {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
         // 수정 처리 (updatedAt은 @LastModifiedDate 로 자동 갱신)
-        review.setRating(updateRequest.getRating());
-        review.setContent(updateRequest.getContent());
+        review.updateReview(updateRequest.getRating(), updateRequest.getContent());
 
         return reviewMapper.toUpdateResponse(review);
     }

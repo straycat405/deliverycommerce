@@ -1,14 +1,15 @@
 package com.babjo.deliverycommerce.domain.review.dto;
 
-import lombok.Setter;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
+@NoArgsConstructor
 public class ReviewCreateResponse {
     private UUID reviewId;
     private UUID orderId;

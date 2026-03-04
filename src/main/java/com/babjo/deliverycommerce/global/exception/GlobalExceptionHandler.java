@@ -1,6 +1,6 @@
 package com.babjo.deliverycommerce.global.exception;
 
-import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
+import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -37,15 +37,15 @@ public class GlobalExceptionHandler {
 
     // 직접 던지는 예외
     @ExceptionHandler(CustomException.class)
-    public ResponseEntity<ApiResponse<?>> handleCustomException(CustomException e) {
+    public ResponseEntity<CommonResponse<?>> handleCustomException(CustomException e) {
         log.warn("[CustomException] code={}, message={}", e.getErrorCode().getCode(), e.getMessage());
         // 내부 status와 HTTP status를 한 번에 해결
-        return ApiResponse.error(e.getErrorCode());
+        return CommonResponse.error(e.getErrorCode());
     }
 
     // @Valid 유효성 검사 실패
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<?>> handleValidationException(MethodArgumentNotValidException e) {
+    public ResponseEntity<CommonResponse<?>> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult()
                 .getFieldErrors()
                 .stream()
@@ -56,28 +56,28 @@ public class GlobalExceptionHandler {
         log.warn("[ValidationException] message={}", message);
 
         // ResponseEntity.status().body()를 생략하고 바로 반환
-        return ApiResponse.error(ErrorCode.INVALID_INPUT, message);
+        return CommonResponse.error(ErrorCode.INVALID_INPUT, message);
     }
 
     // @PreAuthorize 권한 거부
     @ExceptionHandler(AuthorizationDeniedException.class)
-    public ResponseEntity<ApiResponse<?>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
+    public ResponseEntity<CommonResponse<?>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
         log.warn("[AuthorizationDeniedException] message={}", e.getMessage());
-        return ApiResponse.error(ErrorCode.FORBIDDEN);
+        return CommonResponse.error(ErrorCode.FORBIDDEN);
     }
 
     // 기타 접근 거부 (Filter레벨)
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<?>> handleAccessDeniedException(AccessDeniedException e) {
+    public ResponseEntity<CommonResponse<?>> handleAccessDeniedException(AccessDeniedException e) {
         log.warn("[AccessDeniedException] message={}", e.getMessage());
-        return ApiResponse.error(ErrorCode.FORBIDDEN);
+        return CommonResponse.error(ErrorCode.FORBIDDEN);
     }
 
     // 나머지 예상 못한 예외상황
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> unhandledException(Exception e) {
+    public ResponseEntity<CommonResponse<?>> unhandledException(Exception e) {
         log.error("[UnhandledException]", e);
-        // 여기서도 ApiResponse.error()만 사용
-        return ApiResponse.error(ErrorCode.INTERNAL_SERVER_ERROR);
+        // 여기서도 CommonResponse.error()만 사용
+        return CommonResponse.error(ErrorCode.INTERNAL_SERVER_ERROR);
     }
 }

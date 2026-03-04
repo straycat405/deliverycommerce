@@ -1,6 +1,6 @@
 package com.babjo.deliverycommerce.user.controller;
 
-import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
+import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
@@ -37,9 +37,9 @@ public class UserController {
      * 회원가입 처리
      */
     @PostMapping("/signup")
-    public ResponseEntity<ApiResponse<SignupResponseDto>> signup (@Valid @RequestBody SignupRequestDto requestDto) {
+    public ResponseEntity<CommonResponse<SignupResponseDto>> signup (@Valid @RequestBody SignupRequestDto requestDto) {
         SignupResponseDto response = userService.signup(requestDto);
-        return ApiResponse.created("회원가입 성공",response);
+        return CommonResponse.created("회원가입 성공",response);
     }
 
     /**
@@ -47,7 +47,7 @@ public class UserController {
      * 로그인
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<LoginResponseDto>> login (
+    public ResponseEntity<CommonResponse<LoginResponseDto>> login (
             @Valid @RequestBody LoginRequestDto requestDto,
             HttpServletResponse response // Cookie-Refresh Token 세팅용
     ) {
@@ -63,7 +63,7 @@ public class UserController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ApiResponse.ok("로그인 성공", loginResponse);
+        return CommonResponse.ok("로그인 성공", loginResponse);
     }
 
     /**
@@ -72,7 +72,7 @@ public class UserController {
      * AccessToken을 Redis Blacklist에 등록하고 Refresh Token을 Redis에서 삭제합니다.
      */
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(
+    public ResponseEntity<CommonResponse<Void>> logout(
             @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader,
             @AuthenticationPrincipal UserPrincipal principal,
             HttpServletResponse response
@@ -100,7 +100,7 @@ public class UserController {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         // 응답 반환
-        return ApiResponse.ok("로그아웃 성공",null);
+        return CommonResponse.ok("로그아웃 성공",null);
     }
 
     /**
@@ -110,7 +110,7 @@ public class UserController {
      * @param response - Header Set Cookie (new refresh token)
      */
     @PostMapping("/reissue")
-    public ResponseEntity<ApiResponse<LoginResponseDto>> reissue(
+    public ResponseEntity<CommonResponse<LoginResponseDto>> reissue(
             @CookieValue(name = "refresh_token", required = false) String refreshToken,
             HttpServletResponse response
     ) {
@@ -126,7 +126,7 @@ public class UserController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
-        return ApiResponse.ok("토큰 재발급 성공", reissueResponse);
+        return CommonResponse.ok("토큰 재발급 성공", reissueResponse);
     }
 
     /**
@@ -136,10 +136,10 @@ public class UserController {
 
     @PreAuthorize("hasAnyRole('MANAGER', 'MASTER') or #userId == authentication.principal.userId")
     @GetMapping("/{userId}")
-    public ResponseEntity<ApiResponse<UserResponseDto>> getUser(@PathVariable long userId) {
+    public ResponseEntity<CommonResponse<UserResponseDto>> getUser(@PathVariable long userId) {
         UserResponseDto responseDto = userService.getUser(userId);
 
-        return ApiResponse.ok("사용자 단건 조회 성공",responseDto);
+        return CommonResponse.ok("사용자 단건 조회 성공",responseDto);
     }
 
     /**

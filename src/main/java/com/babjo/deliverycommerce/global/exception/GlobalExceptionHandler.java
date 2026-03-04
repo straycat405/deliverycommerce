@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.global.exception;
 import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
@@ -13,18 +14,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * 전역 예외 처리 핸들러
  *
- *
- *   예외는 아래 두 가지 방식으로만 던져주세요. 핸들러가 자동으로 잡아서 응답 처리합니다.
- *
  *   [비즈니스 예외]
  *     throw new CustomException(ErrorCode.USER_NOT_FOUND);
  *
  *   [유효성 검증 실패]
- *     DTO 필드에 @NotBlank, @Size 등 달아두면 자동 처리됨
+ *     DTO 필드에 @NotBlank, @Size 등으로 유효성 검증
  *     별도 throw 불필요
  *
  *   새 예외 타입 추가가 필요하면
- *   Git 관리자(부조장)에게 요청할 것
+ *   Git 관리자에게 요청할 것
  *
  *   주의
  *   try-catch로 직접 잡아서 ResponseEntity 반환하지 말 것
@@ -43,7 +41,7 @@ public class GlobalExceptionHandler {
         return CommonResponse.error(e.getErrorCode());
     }
 
-    // @Valid 유효성 검사 실패
+    // @Valid 유효성 검사 실패한 경우 던지는 예외
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<CommonResponse<?>> handleValidationException(MethodArgumentNotValidException e) {
         String message = e.getBindingResult()
@@ -59,11 +57,18 @@ public class GlobalExceptionHandler {
         return CommonResponse.error(ErrorCode.INVALID_INPUT, message);
     }
 
-    // @PreAuthorize 권한 거부
+    // @PreAuthorize 권한 거부시 던지는 예외
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<CommonResponse<?>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
         log.warn("[AuthorizationDeniedException] message={}", e.getMessage());
         return CommonResponse.error(ErrorCode.FORBIDDEN);
+    }
+
+    // Request JSON 필드 비어있는 경우 던지는 예외
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<CommonResponse<?>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        log.warn("[HttpMessageNotReadableException] message={}", e.getMessage());
+        return CommonResponse.error(ErrorCode.INVALID_INPUT);
     }
 
     // 기타 접근 거부 (Filter레벨)

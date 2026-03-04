@@ -2,13 +2,19 @@ package com.babjo.deliverycommerce.order.repository;
 
 import com.babjo.deliverycommerce.order.entity.Order;
 import com.babjo.deliverycommerce.order.entity.OrderStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
-    List<Order> findAllByOrderByCreatedAt(Long userId);
 
+    // 특정 사용자의 주문 내역 조회
+    Page<Order> findAllByOrderByCreatedAt(Long userId, Pageable pageable);
+
+    // 특정 상태의 주문들 조회
     List<Order> findAllByStatus(OrderStatus status);
+
 }

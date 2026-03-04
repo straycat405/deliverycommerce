@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.product.service;
 
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
@@ -7,6 +8,8 @@ import com.babjo.deliverycommerce.product.entity.Product;
 import com.babjo.deliverycommerce.product.repository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,29 +54,41 @@ public class ProductServiceImpl implements ProductService {
         return ProductResponseDto.from(product);
     }
 
-    // 단건 조회(owner 전용)
+    // 단건 조회
     @Override
-    public ProductResponseDto get(UUID productId) {
+    public ProductResponseDto get(UUID productId, UserPrincipal user) {
 
         Product product = productRespository
                 .findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
+        // CUSTOMER는 숨김 상품 조회 불가
+        if(user.getRole().equals("CUSTOMER") && product.isProductHide()) {
+            throw new IllegalArgumentException("상품이 존재하지 않습니다.");
+        }
+
         return ProductResponseDto.from(product);
     }
 
-    // 전체 조회(owner 전용)
+    // 전체 조회
     @Override
-    public List<ProductResponseDto> getAll() {
-        return productRespository.findAllByDeletedAtIsNull()
-                .stream()
+    public List<ProductResponseDto> getAll(UserPrincipal user) {
+
+        String role = user.getRole();
+
+        List<Product> products;
+
+        // CUSTOMER는 숨김 제외
+        if (role.equals("CUSTOMER")) {
+            products = productRespository.findAllByProductHideFalseAndDeletedAtIsNull();
+        } else {    // OWNER 이상은 숨김 포함
+            products = productRespository.findAllByDeletedAtIsNull();
+        }
+
+        return products.stream()
                 .map(ProductResponseDto::from)
                 .collect(Collectors.toList());
     }
-
-    // 단건 조회(customer 전용: 숨김처리 한 상품 표시 X)
-
-    // 전체 조회(customer 전용)
 
     // 수정
     @Override
@@ -84,12 +99,6 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new IllegalArgumentException("상품이 존재하지 않습니다."));
 
         String description = request.getDescription();
-
-        // AI 사용 시
-        if (Boolean.TRUE.equals(request.getUseAiDescription())) {
-            // AI 코드 추가
-            description = "AI 생성 설명(임시)";
-        }
 
         product.update(
                 request.getName(),

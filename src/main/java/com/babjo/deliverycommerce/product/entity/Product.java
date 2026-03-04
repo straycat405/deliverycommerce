@@ -63,4 +63,11 @@ public class Product extends BaseEntity {
     public void show() {
         this.productHide = false;
     }
+
+    public Boolean isProductHide() {
+        if(this.productHide) {
+            return true;
+        }
+        return false;
+    }
 }

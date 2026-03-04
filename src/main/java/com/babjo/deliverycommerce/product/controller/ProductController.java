@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.product.controller;
 
+import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.product.dto.AiDescriptionRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
@@ -8,6 +9,8 @@ import com.babjo.deliverycommerce.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,7 +18,8 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v1/products/")
+@RequestMapping("/v1/products")
+@PreAuthorize("hasAnyRole('OWNER', 'MANAGER', 'MASTER')")
 public class ProductController {
 
     private final ProductService productService;
@@ -26,15 +30,18 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("permitAll()")
     @GetMapping("/{productId}")
-    public ResponseEntity<ProductResponseDto> get(@PathVariable UUID productId) {
-        ProductResponseDto response = productService.get(productId);
+    public ResponseEntity<ProductResponseDto> get(@PathVariable UUID productId, @AuthenticationPrincipal UserPrincipal user) {
+        ProductResponseDto response = productService.get(productId, user);
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> getAll() {
-        List<ProductResponseDto> response = productService.getAll();
+    public ResponseEntity<List<ProductResponseDto>> getAll(@AuthenticationPrincipal UserPrincipal user) {
+        List<ProductResponseDto> response = productService.getAll(user);
+
         return ResponseEntity.ok(response);
     }
 

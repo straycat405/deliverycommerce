@@ -7,9 +7,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum OrderStatus {
     CREATED("주문 생성"), // ERD Default
-    PREPARING("준비 중"),
+    PREPARING("조리 중"),
     ACCEPTED("주문 접수"),
-    SHIPPING("배송 중"),
+    SHIPPING("배달 중"),
     COMPLETED("배달 완료"),
     CANCELED("주문 취소"),
     REJECTED("주문 거절");

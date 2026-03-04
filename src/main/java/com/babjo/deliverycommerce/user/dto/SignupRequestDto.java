@@ -21,7 +21,7 @@ public class SignupRequestDto {
     @NotBlank(message = "password는 필수 입력값입니다.")
     @Pattern(
             regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,15}$",
-            message = "비밀번호는 8자 이상 15자 이하여야 하며, 알파벳 대소문자와 숫자, 특수문자가 포함되어야 합니다."
+            message = "비밀번호는 8자 이상 15자 이하여야 하며, 알파벳 대·소문자와 숫자, 특수문자가 모두 포함되어야 합니다."
     )
     private String password;
 

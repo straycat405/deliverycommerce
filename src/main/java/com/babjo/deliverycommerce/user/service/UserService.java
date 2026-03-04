@@ -87,14 +87,14 @@ public class UserService {
         String accessToken = jwtUtil.createAccessToken(
                 user.getUserId(), user.getUsername(), user.getRole().name()
         );
-        log.info("Access token={}", accessToken);
+        log.debug("Access token={}", accessToken);
 
         // Refresh Token 생성
         String refreshToken = jwtUtil.createRefreshToken(user.getUserId());
-        log.info("Refresh token={}", refreshToken);
+        log.debug("Refresh token={}", refreshToken);
 
         // Redis에 refresh token 7일 지속 설정
-        redisUtil.set("refresh:" + user.getUserId(), refreshToken, 7, TimeUnit.DAYS);
+        redisUtil.set(RedisKeys.refreshKey(user.getUserId()), refreshToken, jwtUtil.getRefreshExpiration(), TimeUnit.MILLISECONDS);
 
         // Cookie 세팅 없이 두 토큰 반환
         return new LoginResponseDto(
@@ -112,7 +112,7 @@ public class UserService {
      * Refresh Token 검증 후 새로운 Access Token + Refresh Token 발급
      */
     public LoginResponseDto reissue(String refreshToken) {
-        log.info("reissue 호출됨, refreshToken={}", refreshToken);
+        log.debug("reissue 호출됨, refreshToken={}", refreshToken);
 
         // null/빈 값 체크
         if (refreshToken == null) {
@@ -154,12 +154,12 @@ public class UserService {
         String newAccessToken = jwtUtil.createAccessToken(
                 user.getUserId(), user.getUsername(), user.getRole().name()
         );
-        log.info("Reissued Access token={}", newAccessToken);
+        log.debug("Reissued Access token={}", newAccessToken);
         String newRefreshToken = jwtUtil.createRefreshToken(user.getUserId());
-        log.info("Reissued Refresh token={}", newRefreshToken);
+        log.debug("Reissued Refresh token={}", newRefreshToken);
 
         // Redis에 새 Refresh Token 갱신
-        redisUtil.set(RedisKeys.refreshKey(userId), newRefreshToken, 7, TimeUnit.DAYS);
+        redisUtil.set(RedisKeys.refreshKey(userId), newRefreshToken, jwtUtil.getRefreshExpiration(), TimeUnit.MILLISECONDS);
 
         return new LoginResponseDto(
                 userId,

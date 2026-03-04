@@ -16,7 +16,8 @@ public class AiDescriptionServiceImpl implements AiDescriptionService {
     @Override
     public String generateProductDescription(String productName, String point) {
 
-        String prompt = """
+        try {
+            String prompt = """
                 당신은 배달앱 음식 메뉴 소개를 작성하는 마케터입니다.
                 
                 [메뉴 이름]
@@ -34,18 +35,30 @@ public class AiDescriptionServiceImpl implements AiDescriptionService {
                 - 이모지 사용 금지
                 """.formatted(productName, point);
 
-        GenerateContentResponse response = geminiClient.models.generateContent(
-                "gemini-3-flash-preview",
-                prompt,
-                null
-        );
+            GenerateContentResponse response = geminiClient.models.generateContent(
+                    "gemini-3-flash-preview",
+                    prompt,
+                    null
+            );
 
-        String result = response.text();
+            String result = response.text();
 
-        if(result == null || result.isBlank()) {
-            throw new RuntimeException("AI 설명 생성 실패");
+            if(result == null || result.isBlank()) {
+                return fallbackDescription(productName, point);
+            }
+
+            return result.trim();
+        } catch (Exception e) {
+            log.error("AI 설명 생성 실패 - fallback 사용", e);
+            return fallbackDescription(productName, point);
+        }
+    }
+
+    private String fallbackDescription(String productName, String point) {
+        if(point != null && !point.isBlank()) {
+            return "%s의 매력을 살린 %s 메뉴입니다.".formatted(productName, point);
         }
 
-        return result.trim();
+        return "% 메뉴입니다.".formatted(productName);
     }
 }

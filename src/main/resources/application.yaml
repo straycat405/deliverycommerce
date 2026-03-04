@@ -1,7 +1,3 @@
-# application.yml (공통)
-# 로컬 : localhost (docker-compose)
-# AWS EC2 : RDS endpoint, ElastiCache endpoint 환경변수로 주입
-
 spring:
   application:
     name: deliverycommerce
@@ -14,15 +10,13 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
-
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       timeout: 2000
 
-# JWT
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: 3600000 # 1H
-  refresh-expiration: 604800000 # 7D
+  access-expiration: 3600000
+  refresh-expiration: 604800000

@@ -6,10 +6,7 @@ import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
-import com.babjo.deliverycommerce.user.dto.LoginRequestDto;
-import com.babjo.deliverycommerce.user.dto.LoginResponseDto;
-import com.babjo.deliverycommerce.user.dto.SignupRequestDto;
-import com.babjo.deliverycommerce.user.dto.SignupResponseDto;
+import com.babjo.deliverycommerce.user.dto.*;
 import com.babjo.deliverycommerce.user.entity.User;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -81,11 +78,6 @@ public class UserService {
         User user = userRepository.findByUsername(requestDto.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_FAILED));
 
-        // 탈퇴한 유저일 경우
-        if (user.getDeletedAt() != null) {
-            throw new CustomException(ErrorCode.WITHDRAWN_USER);
-        }
-
         // 패스워드 불일치 (LOGIN_FAILED로 통합)
         if (!passwordEncoder.matches(requestDto.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.LOGIN_FAILED);
@@ -95,14 +87,14 @@ public class UserService {
         String accessToken = jwtUtil.createAccessToken(
                 user.getUserId(), user.getUsername(), user.getRole().name()
         );
-        log.info("Access token={}", accessToken);
+        log.debug("Access token={}", accessToken);
 
         // Refresh Token 생성
         String refreshToken = jwtUtil.createRefreshToken(user.getUserId());
-        log.info("Refresh token={}", refreshToken);
+        log.debug("Refresh token={}", refreshToken);
 
         // Redis에 refresh token 7일 지속 설정
-        redisUtil.set("refresh:" + user.getUserId(), refreshToken, 7, TimeUnit.DAYS);
+        redisUtil.set(RedisKeys.refreshKey(user.getUserId()), refreshToken, jwtUtil.getRefreshExpiration(), TimeUnit.MILLISECONDS);
 
         // Cookie 세팅 없이 두 토큰 반환
         return new LoginResponseDto(
@@ -120,7 +112,7 @@ public class UserService {
      * Refresh Token 검증 후 새로운 Access Token + Refresh Token 발급
      */
     public LoginResponseDto reissue(String refreshToken) {
-        log.info("reissue 호출됨, refreshToken={}", refreshToken);
+        log.debug("reissue 호출됨, refreshToken={}", refreshToken);
 
         // null/빈 값 체크
         if (refreshToken == null) {
@@ -162,12 +154,12 @@ public class UserService {
         String newAccessToken = jwtUtil.createAccessToken(
                 user.getUserId(), user.getUsername(), user.getRole().name()
         );
-        log.info("Reissued Access token={}", newAccessToken);
+        log.debug("Reissued Access token={}", newAccessToken);
         String newRefreshToken = jwtUtil.createRefreshToken(user.getUserId());
-        log.info("Reissued Refresh token={}", newRefreshToken);
+        log.debug("Reissued Refresh token={}", newRefreshToken);
 
         // Redis에 새 Refresh Token 갱신
-        redisUtil.set(RedisKeys.refreshKey(userId), newRefreshToken, 7, TimeUnit.DAYS);
+        redisUtil.set(RedisKeys.refreshKey(userId), newRefreshToken, jwtUtil.getRefreshExpiration(), TimeUnit.MILLISECONDS);
 
         return new LoginResponseDto(
                 userId,
@@ -177,5 +169,16 @@ public class UserService {
                 newAccessToken,
                 newRefreshToken
         );
+    }
+
+    /**
+     * 사용자 단건 조회
+     */
+    public UserResponseDto getUser(long userId) {
+        // 사용자 조회 시도
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return new UserResponseDto(user);
     }
 }

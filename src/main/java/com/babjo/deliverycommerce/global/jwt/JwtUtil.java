@@ -22,7 +22,7 @@ public class JwtUtil {
     // Authorization Header KEY
     public static final String AUTHORIZATION_HEADER = "Authorization";
     // JWT payload에 담을 권한 (role) 클레임 키
-    public static final String AUTHORIZATION_KEY = "roles";
+    public static final String AUTHORIZATION_KEY = "role";
     // Bearer 토큰 식별자 (헤더값 파싱 시 제거)
     public static final String BEARER_PREFIX = "Bearer ";
 

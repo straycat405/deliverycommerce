@@ -8,6 +8,11 @@ import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.user.dto.*;
 import com.babjo.deliverycommerce.user.service.UserService;
 import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/users")
+@Tag(name = "User", description = "사용자 관련 API")
 public class UserController {
 
     private final UserService userService;
@@ -34,8 +40,22 @@ public class UserController {
 
     /**
      * POST /v1/users/signup
-     * 회원가입 처리
      */
+    @Operation(
+            summary = "회원가입",
+            description = """                                                                                                                                                                                                         
+      새로운 사용자를 등록합니다.                                                                                                                                                                                           
+      - username: 4~10자, 소문자+숫자                                                                                                                                                                      
+      - password: 8~15자, 대소문자+숫자+특수문자 필수 포함                                                                                                                                                                            
+      - role: CUSTOMER, OWNER, MANAGER, MASTER                                                                                                                                                                              
+      """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "회원가입 성공"),
+            @ApiResponse(responseCode = "400", description = "유효성 검사 실패 / 필수값 누락 / 값 불일치"),
+            @ApiResponse(responseCode = "409", description = "중복된 아이디 또는 이메일")
+    })
+    @SecurityRequirements
     @PostMapping("/signup")
     public ResponseEntity<CommonResponse<SignupResponseDto>> signup (@Valid @RequestBody SignupRequestDto requestDto) {
         SignupResponseDto response = userService.signup(requestDto);
@@ -44,8 +64,20 @@ public class UserController {
 
     /**
      * POST /v1/users/login
-     * 로그인
      */
+    @Operation(
+            summary = "로그인",
+            description = """
+                    아이디 / 비밀번호를 검증 후 로그인합니다.
+                    로그인에 성공하면 AccessToken, RefreshToken이 발급됩니다.
+                    Redis에 refreshToken을 7일 저장합니다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그인 성공"),
+            @ApiResponse(responseCode = "400", description = "유효성 검사 실패 / 필수값 누락 / 비밀번호 불일치")
+    })
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<CommonResponse<LoginResponseDto>> login (
             @Valid @RequestBody LoginRequestDto requestDto,
@@ -68,9 +100,20 @@ public class UserController {
 
     /**
      * POST /v1/users/logout
-     * 로그아웃
      * AccessToken을 Redis Blacklist에 등록하고 Refresh Token을 Redis에서 삭제합니다.
      */
+    @Operation(
+            summary = "로그아웃",
+            description = """
+                    사용자를 로그아웃 처리합니다.
+                    AccessToken을 Redis에 블랙리스트로 등록 후,
+                    해당 userId의 Refresh Token을 Redis 메모리에서 삭제합니다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+            @ApiResponse(responseCode = "401", description = "이미 로그아웃 처리된 토큰 / 유효하지 않은 토큰")
+    })
     @PostMapping("/logout")
     public ResponseEntity<CommonResponse<Void>> logout(
             @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader,
@@ -82,10 +125,12 @@ public class UserController {
         Claims info = jwtUtil.getUserInfoFromToken(token);
         // 토큰의 userId값 추출
         long userId = principal.getUserId();
+        log.info("[Logout] userId={}, username={}", userId, principal.getUsername());
         // Access Token 남은 만료시간 계산
         long duration = jwtUtil.getRemainExpiration(token);
         // Redis에 AccessToken 블랙리스트 등록
         redisUtil.set(RedisKeys.blacklistKey(token),"logout", duration, TimeUnit.MILLISECONDS);
+        log.info("[Logout] 블랙리스트 등록 완료 - userId={}, 만료까지={}ms", userId, duration);
         // Refresh Token 삭제
         redisUtil.delete(RedisKeys.refreshKey(userId));
         // Refresh Token 쿠키 만료 (응답 쿠키 설정)
@@ -109,6 +154,19 @@ public class UserController {
      * @param refreshToken - Cookie의 "refresh_token"값
      * @param response - Header Set Cookie (new refresh token)
      */
+    @Operation(
+            summary = "토큰 재발급",
+            description = """
+                    로그인 중인 사용자의 토큰을 인증 후 재발급합니다.
+                    새로운 Access Token은 responseDto에,
+                    새로운 Refresh Token은 Cookie에 세팅합니다.
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "토큰 재발급 성공"),
+            @ApiResponse(responseCode = "401", description = "유효하지 않은 토큰 / 만료된 토큰 / Redis 저장값과 불일치")
+    })
+    @SecurityRequirements
     @PostMapping("/reissue")
     public ResponseEntity<CommonResponse<LoginResponseDto>> reissue(
             @CookieValue(name = "refresh_token", required = false) String refreshToken,
@@ -131,9 +189,21 @@ public class UserController {
 
     /**
      * 사용자 단건 조회
-     * 권한 : MANAGER/MASTER - 전체 , OWNER/CUSTOMER - 본인만
      */
-
+    @Operation(
+            summary = "사용자 단건 조회",
+            description = """
+                    사용자를 조회합니다.
+                    CUSTOMER / OWNER : 본인 정보만 조회 가능
+                    MANAGER / MASTER : 전체 사용자 정보 조회 가능
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "사용자 조회 성공"),
+            @ApiResponse(responseCode = "400", description = "필수값 누락"),
+            @ApiResponse(responseCode = "403", description = "권한 없음"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+    })
     @PreAuthorize("hasAnyRole('MANAGER', 'MASTER') or #userId == authentication.principal.userId")
     @GetMapping("/{userId}")
     public ResponseEntity<CommonResponse<UserResponseDto>> getUser(@PathVariable long userId) {

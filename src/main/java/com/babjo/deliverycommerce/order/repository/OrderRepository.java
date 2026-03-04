@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
     // 사용자의 주문 내역 조회
-    Page<Order> findAllByOrderByCreatedAt(Long userId, Pageable pageable);
+    Page<Order> findAllByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
     // 특정 상태의 주문들 조회
     List<Order> findAllByStatus(OrderStatus status);

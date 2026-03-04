@@ -5,6 +5,10 @@ import com.babjo.deliverycommerce.order.dto.OrderResponseDto;
 import com.babjo.deliverycommerce.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,17 @@ public class OrderController {
             @PathVariable UUID orderId
     ){
         OrderResponseDto response = orderService.getOrderDetails(orderId);
+        return ResponseEntity.ok(response);
+    }
+
+    // 사용자의 주문 내역 조회
+    @GetMapping
+    public ResponseEntity<Page<OrderResponseDto>> getMyOrders(
+            @RequestHeader(name = "UserId") Long userId,
+            // default size 10
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            ){
+        Page<OrderResponseDto> response = orderService.getUserOders(userId, pageable);
         return ResponseEntity.ok(response);
     }
 

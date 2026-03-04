@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.order.entity.Order;
 import com.babjo.deliverycommerce.order.entity.OrderItem;
 import com.babjo.deliverycommerce.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
 
+    // 주문 생성
     @Transactional
     public OrderResponseDto createOrder(Long userId, OrderRequestDto.CreateOrder request){
         List<OrderItem> orderItems = request.getOrderItems().stream()
@@ -41,6 +44,15 @@ public class OrderService {
         return convertToResponseDto(savedOrder);
     }
 
+    // 고객의 주문 내역 목록 조회 ( 페이징 )
+    public Page<OrderResponseDto> getUserOders(Long userId, Pageable pageable){
+        Page<Order> orderPage = orderRepository.findAllByOrderByCreatedAt(userId, pageable);
+
+        return orderPage.map(this::convertToResponseDto);
+    }
+
+
+    // 주문 상세 조회
     public OrderResponseDto getOrderDetails(UUID orderId){
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));

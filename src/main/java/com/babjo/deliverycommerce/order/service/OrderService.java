@@ -47,6 +47,22 @@ public class OrderService {
         return convertToResponseDto(order);
     }
 
+
+    // 주문 취소
+    @Transactional
+    public void cancelOrder(UUID orderId, Long userId, String reason){
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("취소할 주문이 존재하지 않습니다."));
+
+        if(!order.getUserId().equals(userId)){
+            throw new IllegalStateException("본인의 주문만 취소 할 수 있습니다.");
+        }
+
+        order.cancel(userId,reason);
+
+    }
+
     private OrderResponseDto convertToResponseDto(Order order){
         List<OrderResponseDto.OrderItemResponse> itemResponses = order.getOrderItems().stream()
                 .map(item -> OrderResponseDto.OrderItemResponse.builder()

@@ -37,4 +37,16 @@ public class OrderController {
         OrderResponseDto response = orderService.getOrderDetails(orderId);
         return ResponseEntity.ok(response);
     }
+
+    // 주문 취소 PATCH /v1/orders/{orderId}/cancel
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<Void> cancelOrder(
+            @RequestHeader(name = "UserId")Long userId,
+            @PathVariable UUID orderId,
+            @RequestParam String reason
+    ){
+        orderService.cancelOrder(orderId,userId, reason);
+        return ResponseEntity.noContent().build();
+    }
+
 }

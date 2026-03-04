@@ -8,6 +8,8 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
 import com.babjo.deliverycommerce.domain.review.mapper.ReviewMapper;
 import com.babjo.deliverycommerce.domain.review.repository.ReviewRepository;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,24 +40,24 @@ public class ReviewService {
             ReviewCreateRequest createRequest
     ) {
 //        User user = userRepository.findById(userId)
-//                .orElseThrow(() -> new RuntimeException("User not found"));
+//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 //        Order order = orderRepository.findById(createRequest.getOrderId())
-//                .orElseThrow(() -> new RuntimeException("Order not found"));
+//                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
         // 주문 상태 COMPLETED 확인 (실패조건: 완료되지 않은 주문)
         // if (order.getStatus() != OrderStatus.COMPLETED) {
-        //     throw new RuntimeException("Order is not completed");
+        //     throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
         // }
 
         // 중복 리뷰 방지 (실패조건: 이미 작성된 리뷰)
         // boolean alreadyExists = reviewRepository.existsByOrder(order);
         // if (alreadyExists) {
-        //     throw new RuntimeException("Review already exists for this order");
+        //     throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         // }
 
 //        Store store = storeRepository.findById(createRequest.getStoreId())
-//                .orElseThrow(() -> new RuntimeException("Store not found"));
+//                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         Review review = reviewMapper.toEntity(
                 createRequest
@@ -75,7 +77,7 @@ public class ReviewService {
         // reviewId가 있으면 단건 조회 (List 형태로 반환)
         if (reviewId != null) {
             Review review = reviewRepository.findByReviewIdAndDeletedAtIsNull(reviewId)
-                    .orElseThrow(() -> new RuntimeException("Review not found"));
+                    .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
             return List.of(reviewMapper.toResponse(review));
         }
 
@@ -97,11 +99,11 @@ public class ReviewService {
 
     public void deleteReview(UUID reviewId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
         // if (!review.getUser().getId().equals(userId)) {
-        //     throw new RuntimeException("Unauthorized: not the author");
+        //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
         // [TODO] 인증 연결 후 실제 userId 전달
@@ -115,11 +117,11 @@ public class ReviewService {
     ) {
         // 실패조건: 존재하지 않는 리뷰
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new RuntimeException("Review not found"));
+                .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
         // if (!review.getUser().getId().equals(userId)) {
-        //     throw new RuntimeException("Unauthorized: not the author");
+        //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
         // 수정 처리 (updatedAt은 @LastModifiedDate 로 자동 갱신)

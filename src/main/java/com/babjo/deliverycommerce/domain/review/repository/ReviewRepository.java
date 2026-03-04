@@ -15,6 +15,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     List<Review> findAllByDeletedAtIsNull();
 
-    // [TODO] Store 도메인 연결 후 주석 해제
-    // List<Review> findAllByStore_StoreIdAndDeletedAtIsNull(UUID storeId);
+    List<Review> findAllByStore_StoreIdAndDeletedAtIsNull(UUID storeId);
+
+    // [TODO] Order 도메인 연결 후 주석 해제 - 중복 리뷰 방지용
+    // boolean existsByOrderAndDeletedAtIsNull(Order order);
 }

@@ -8,6 +8,8 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
 import com.babjo.deliverycommerce.domain.review.mapper.ReviewMapper;
 import com.babjo.deliverycommerce.domain.review.repository.ReviewRepository;
+import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-// [TODO] 도메인 연결 후 import 추가 필요
-// import com.babjo.deliverycommerce.order.entity.Order;
-// import com.babjo.deliverycommerce.order.entity.OrderStatus;
-// import com.babjo.deliverycommerce.order.repository.OrderRepository;
-// import com.babjo.deliverycommerce.store.entity.Store;
-// import com.babjo.deliverycommerce.store.repository.StoreRepository;
+// [TODO] Order 도메인 연결 후 import 추가 필요
+// import com.babjo.deliverycommerce.domain.order.entity.Order;
+// import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
+// import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 // import com.babjo.deliverycommerce.user.repository.UserRepository;
 
 @Service
@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class ReviewService {
     private final ReviewRepository reviewRepository;
+    private final StoreRepository storeRepository;
 //    private final UserRepository userRepository;
 //    private final OrderRepository orderRepository;
-//    private final StoreRepository storeRepository;
     private final ReviewMapper reviewMapper;
 
     public ReviewCreateResponse createReview(
@@ -50,20 +50,21 @@ public class ReviewService {
         //     throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
         // }
 
-        // 중복 리뷰 방지 (실패조건: 이미 작성된 리뷰)
-        // boolean alreadyExists = reviewRepository.existsByOrder(order);
+        // 중복 리뷰 방지 - 1주문 1리뷰 (실패조건: 해당 주문에 이미 리뷰 존재)
+        // [TODO] Order 연결 후 주석 해제
+        // boolean alreadyExists = reviewRepository.existsByOrderAndDeletedAtIsNull(order);
         // if (alreadyExists) {
         //     throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
         // }
 
-//        Store store = storeRepository.findById(createRequest.getStoreId())
-//                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        Store store = storeRepository.findByStoreIdAndDeletedAtIsNull(createRequest.getStoreId())
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         Review review = reviewMapper.toEntity(
-                createRequest
-//                ,user,
+                createRequest,
+//                user,
 //                order,
-//                store
+                store
         );
         Review savedReview = reviewRepository.save(review);
 
@@ -72,7 +73,7 @@ public class ReviewService {
 
     @Transactional(readOnly = true)
     public List<ReviewResponse> getReviews(UUID reviewId, UUID storeId) {
-        // [TODO] 인증 연결 후 userId 기반 필터 추가 (아무 파라미터도 않들어왔을때 사용자용 전체 리뷰 조회)
+        // [TODO] 인증 연결 후 userId 기반 필터 추가
 
         // reviewId가 있으면 단건 조회 (List 형태로 반환)
         if (reviewId != null) {
@@ -81,14 +82,13 @@ public class ReviewService {
             return List.of(reviewMapper.toResponse(review));
         }
 
-        // storeId 필터 목록 조회
-        // [TODO] Store 도메인 연결 후 주석 해제
-        // if (storeId != null) {
-        //     return reviewRepository.findAllByStore_StoreIdAndDeletedAtIsNull(storeId)
-        //             .stream()
-        //             .map(reviewMapper::toResponse)
-        //             .collect(Collectors.toList());
-        // }
+        // storeId 필터 목록 조회 - 가게별 리뷰 목록
+        if (storeId != null) {
+            return reviewRepository.findAllByStore_StoreIdAndDeletedAtIsNull(storeId)
+                    .stream()
+                    .map(reviewMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
 
         // 전체 목록 조회
         return reviewRepository.findAllByDeletedAtIsNull()
@@ -102,7 +102,7 @@ public class ReviewService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getId().equals(userId)) {
+        // if (!review.getUser().getUserId().equals(userId)) {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 
@@ -120,7 +120,7 @@ public class ReviewService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getId().equals(userId)) {
+        // if (!review.getUser().getUserId().equals(userId)) {
         //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         // }
 

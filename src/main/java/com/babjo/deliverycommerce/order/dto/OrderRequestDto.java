@@ -39,7 +39,7 @@ public class OrderRequestDto {
         private Integer orderCount;
 
         @NotNull(message = "가격 정보가 없습니다.")
-        private Integer productPrice;
+        private Integer orderPrice;
 
 
     }

@@ -28,7 +28,7 @@ public class OrderService {
                 .map(itemDto -> OrderItem.createOrderItem(
                         itemDto.getProductId(),
                         itemDto.getProductName(),
-                        itemDto.getProductPrice(),
+                        itemDto.getOrderPrice(),
                         itemDto.getOrderCount()
                 ))
                 .toList();
@@ -46,7 +46,7 @@ public class OrderService {
 
     // 고객의 주문 내역 목록 조회 ( 페이징 )
     public Page<OrderResponseDto> getUserOders(Long userId, Pageable pageable){
-        Page<Order> orderPage = orderRepository.findAllByOrderByCreatedAt(userId, pageable);
+        Page<Order> orderPage = orderRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
 
         return orderPage.map(this::convertToResponseDto);
     }

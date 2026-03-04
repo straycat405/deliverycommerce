@@ -13,6 +13,7 @@ public interface ProductService {
     ProductResponseDto create(ProductCreateRequestDto request);
     ProductResponseDto get(UUID productIdm,UserPrincipal user);
     List<ProductResponseDto> getAll(UserPrincipal user);
+    List<ProductResponseDto> getByCategory(String category, UserPrincipal user);
     ProductResponseDto update(UUID productId, ProductUpdateRequestDto request);
     void delete(UUID productId, Long userId);
 

@@ -39,10 +39,13 @@ public class ProductController {
 
     @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> getAll(@AuthenticationPrincipal UserPrincipal user) {
-        List<ProductResponseDto> response = productService.getAll(user);
+    public ResponseEntity<List<ProductResponseDto>> getProducts(@RequestParam(required = false) String category, @AuthenticationPrincipal UserPrincipal user) {
 
-        return ResponseEntity.ok(response);
+        if (category != null) {
+            return ResponseEntity.ok(productService.getByCategory(category, user));
+        }
+
+        return ResponseEntity.ok(productService.getAll(user));
     }
 
     @PutMapping("/{productId}")

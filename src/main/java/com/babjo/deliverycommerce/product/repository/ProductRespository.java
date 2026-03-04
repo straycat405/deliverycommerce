@@ -14,11 +14,12 @@ public interface ProductRespository extends JpaRepository<Product, UUID> {
     // 단건 조회(삭제 제외)
     Optional<Product> findByProductIdAndDeletedAtIsNull(UUID productId);
 
-    // 가게별 전체 조회(삭제 제회)
+    // 가게별 전체 조회(삭제 제외)
     List<Product> findAllByDeletedAtIsNull();
 
     // 카테고리 필터
     List<Product> findAllByProductCategoryAndDeletedAtIsNull(String category);
+    List<Product> findAllByProductCategoryAndDeletedAtIsNullAndProductHideFalse(String category);
 
     // 숨김 제외(고객용)
     List<Product> findAllByProductHideFalseAndDeletedAtIsNull();

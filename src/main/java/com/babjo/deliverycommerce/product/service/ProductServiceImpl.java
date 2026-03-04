@@ -90,6 +90,24 @@ public class ProductServiceImpl implements ProductService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<ProductResponseDto> getByCategory(String category, UserPrincipal user) {
+
+        String role = user.getRole();
+
+        List<Product> products;
+
+        if (role.equals("CUSTOMER")) {
+            products = productRespository.findAllByProductCategoryAndDeletedAtIsNullAndProductHideFalse(category);
+        } else {
+            products = productRespository.findAllByProductCategoryAndDeletedAtIsNull(category);
+        }
+
+        return products.stream()
+                .map(ProductResponseDto::from)
+                .toList();
+    }
+
     // 수정
     @Override
     @Transactional

@@ -1,6 +1,5 @@
-package com.babjo.deliverycommerce.review.controller;
+package com.babjo.deliverycommerce.domain.review.controller;
 
-import com.babjo.deliverycommerce.domain.review.controller.ReviewController;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;

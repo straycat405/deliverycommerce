@@ -52,6 +52,7 @@ public class SwaggerConfig {
                         ### 인증 방식
                         - JWT Bearer Token 인증
                         - 로그인 후 발급받은 Access Token을 Authorization 헤더에 포함
+                        - ex) Authorization : Bearer eyJhbGciOiJI.....
                         
                         ### 권한 체계
                         |권한|설명|

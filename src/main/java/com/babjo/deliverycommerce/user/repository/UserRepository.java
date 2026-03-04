@@ -9,9 +9,6 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // 기존 - @Where 적용됨 (활성 사용자만)
-    boolean existsByUsername(String username);
-
     // 추가 - 삭제된 사용자 포함 체크 (Native Query)
     @Query(value = "SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END " +
             "FROM p_user WHERE username = :username",

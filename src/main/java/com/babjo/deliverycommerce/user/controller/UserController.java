@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -139,5 +140,35 @@ public class UserController {
         UserResponseDto responseDto = userService.getUser(userId);
 
         return ApiResponse.ok("사용자 단건 조회 성공",responseDto);
+    }
+
+    /**
+     * 사용자 목록 검색
+     * 권한 : MANAGER/MASTER
+     */
+    @PreAuthorize("hasAnyRole('MANAGER', 'MASTER')")
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<UserSearchResponseDto>>> searchUsers(@ModelAttribute UserSearchRequestDto request) {
+
+        log.info("사용자 목록 검색 - username={}, nickname={}, role={}, page={}, size={}, sortBy={}, isAsc={}, includeDeleted={}",
+                request.getUsername(), request.getNickname(), request.getRole(), request.getPage(), request.getSize(), request.getSortBy(), request.isAsc(), request.isIncludeDeleted() );
+        Page<UserSearchResponseDto> result = userService.searchUsers(request);
+        return ApiResponse.ok("사용자 목록 조회 성공", result);
+    }
+
+    /**
+     * 사용자 수정 (본인)
+     * 권한 : 로그인 유저 본인
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserUpdateResponseDto>> updateUser(@Valid @RequestBody UserUpdateRequestDto requestDto,
+                                                                   @AuthenticationPrincipal UserPrincipal principal) {
+
+        // 토큰에서 userId 추출 (비교용)
+        long userId = principal.getUserId();
+
+        UserUpdateResponseDto responseDto = userService.updateUser(requestDto, userId);
+        return ApiResponse.ok("사용자 정보 수정 성공", responseDto);
     }
 }

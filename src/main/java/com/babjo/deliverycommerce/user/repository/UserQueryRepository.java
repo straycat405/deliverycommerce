@@ -8,6 +8,7 @@ import com.babjo.deliverycommerce.user.entity.User;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -116,7 +117,7 @@ public class UserQueryRepository {
             builder.and(user.username.containsIgnoreCase(username));
         }
 
-        // nickname 부분 검색 (대소문자 무시)
+        // nickname 부분 검색
         if (StringUtils.hasText(nickname)) {
             builder.and(user.nickname.containsIgnoreCase(nickname));
         }

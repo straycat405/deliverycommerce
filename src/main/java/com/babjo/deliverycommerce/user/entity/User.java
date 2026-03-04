@@ -74,8 +74,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true , length = 255)
     private String email;
 
-    // 한글 정렬 사용을 위한 annotation 설정
-    @Column(nullable = false, columnDefinition = "VARCHAR(50) COLLATE \"ko_icu\"")
+    @Column(nullable = false)
     private String nickname;
 
     @Column(nullable = false , length = 20)

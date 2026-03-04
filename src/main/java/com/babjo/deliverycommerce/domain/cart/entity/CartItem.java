@@ -32,7 +32,7 @@ public class CartItem extends BaseEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    private static CartItem create(UUID cartId, UUID productId, Integer quantity) {
+    public static CartItem create(UUID cartId, UUID productId, Integer quantity) {
         CartItem cartItem = new CartItem();
         cartItem.cartItemId = UUID.randomUUID();
         cartItem.cartId = cartId;

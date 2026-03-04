@@ -109,7 +109,7 @@ public class StoreControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "OWNER")
     @DisplayName("가게 생성 API 호출 시 생성된 가게 정보를 반환")
     void createStore_success() throws Exception {
         // given
@@ -156,7 +156,7 @@ public class StoreControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "OWNER")
     @DisplayName("가게 수정 API 호출 시 수정된 가게 정보를 반환")
     void updateStore_success() throws Exception {
         // given
@@ -203,7 +203,7 @@ public class StoreControllerTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "OWNER")
     @DisplayName("가게 삭제 API 호출 시 204 No Content를 반환")
     void deleteStore_success() throws Exception {
         // given

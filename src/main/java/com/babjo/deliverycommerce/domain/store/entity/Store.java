@@ -49,14 +49,15 @@ public class Store extends BaseEntity {
     }
 
     public void update(String category, String name, String address) {
-        if (category != null) {
-            this.category = category;
+        if (category != null && !category.isBlank()) {
+            this.category = category.trim();
         }
-        if (name != null) {
-            this.name = name;
+        if (name != null && !name.isBlank()) {
+            this.name = name.trim();
         }
-        if (address != null) {
-            this.address = address;
+
+        if (address != null && !address.isBlank()) {
+            this.address = address.trim();
         }
     }
 }

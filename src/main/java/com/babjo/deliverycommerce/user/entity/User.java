@@ -4,12 +4,14 @@ import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) // JPA 기본생성자
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Where(clause="deleted_at IS NULL")
 @Table(name="p_user")
 public class User extends BaseEntity {
 

@@ -74,12 +74,21 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true , length = 255)
     private String email;
 
-    @Column(nullable = false , length = 50)
+    // 한글 정렬 사용을 위한 annotation 설정
+    @Column(nullable = false, columnDefinition = "VARCHAR(50) COLLATE \"ko_icu\"")
     private String nickname;
 
     @Column(nullable = false , length = 20)
     @Enumerated(value = EnumType.STRING)
     private UserEnumRole role;
+
+    // 사용자 정보 수정
+    public void updateUser (String username, String password, String email, String nickname) {
+        if (username != null) this.username = username;
+        if (password != null) this.password = password;
+        if (email != null) this.email = email;
+        if (nickname != null) this.nickname = nickname;
+    }
 
     // 테스트용 목업
     public static User createForTest(Long userId, String username, String email,

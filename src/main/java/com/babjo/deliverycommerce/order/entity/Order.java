@@ -78,7 +78,7 @@ public class Order extends BaseEntity {
     }
     private void calculateTotalPrice(){
         this.totalPrice = this.orderItems.stream()
-                .mapToInt(item -> item.getOrderPrice() * item.getOrderCount())
+                .mapToInt(OrderItem::getItemTotal)
                 .sum();
     }
 

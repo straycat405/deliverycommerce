@@ -10,6 +10,7 @@ package com.babjo.deliverycommerce.global.common.audit;
  * save() 호출 시 JPA가 이 클래스를 통해 자동으로 값을 주입한다.
  */
 
+
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.domain.AuditorAware;
@@ -32,7 +33,7 @@ public class AuditorAwareImpl implements AuditorAware<Long> {
             return Optional.empty();
         }
 
-        // 로그인 상태 → JWT에서 파싱된 UserPrincipal에서 userId 꺼냄
+        // 로그인 상태 → JWT에서 파싱된 UserDetails에서 userId 꺼냄
         UserPrincipal principal = (UserPrincipal) auth.getPrincipal();
         return Optional.of(principal.getUserId());
     }

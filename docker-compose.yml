@@ -5,6 +5,7 @@ services:
   postgres:
     image: postgres:16
     container_name: deliverycommerce-postgres
+    restart: no # prod환경에선 always
     environment:
       POSTGRES_DB: deliverycommerce
       POSTGRES_USER: babjo

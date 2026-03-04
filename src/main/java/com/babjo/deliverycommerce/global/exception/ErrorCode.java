@@ -8,7 +8,7 @@ package com.babjo.deliverycommerce.global.exception;
  *
  *  새 에러코드 추가할때
  *  1. 본인 도메인 영역 주석 아래에 추가
- *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "한글 메시지")
+ *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "메시지 내용")
  *  ex) ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다.")
  *  3. develop 브랜치에 PR 날려서 충돌 방지할 것 (동시 수정 지양)
  *  4. 에러코드 문자열( 2nd Parameter)는 EUNM 이름과 동일하게

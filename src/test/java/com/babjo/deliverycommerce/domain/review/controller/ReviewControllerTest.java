@@ -97,6 +97,68 @@ class ReviewControllerTest {
     }
 
     @Test
+    void createReview_성공_경계값_rating_최솟값_1() throws Exception {
+        UUID orderId  = UUID.randomUUID();
+        UUID storeId  = UUID.randomUUID();
+        UUID reviewId = UUID.randomUUID();
+
+        ReviewCreateResponse response = new ReviewCreateResponse();
+        response.setReviewId(reviewId);
+        response.setStoreId(storeId);
+        response.setRating(1);
+        response.setContent("별로에요");
+        response.setCreatedAt(LocalDateTime.now());
+
+        when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  1,
+                  "content": "별로에요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.rating").value(1));
+    }
+
+    @Test
+    void createReview_성공_경계값_rating_최댓값_5() throws Exception {
+        UUID orderId  = UUID.randomUUID();
+        UUID storeId  = UUID.randomUUID();
+        UUID reviewId = UUID.randomUUID();
+
+        ReviewCreateResponse response = new ReviewCreateResponse();
+        response.setReviewId(reviewId);
+        response.setStoreId(storeId);
+        response.setRating(5);
+        response.setContent("최고에요");
+        response.setCreatedAt(LocalDateTime.now());
+
+        when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  5,
+                  "content": "최고에요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.rating").value(5));
+    }
+
+    @Test
     void createReview_유효성검사_실패_필수필드_누락() throws Exception {
         mockMvc.perform(post("/v1/reviews")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -107,7 +169,7 @@ class ReviewControllerTest {
     }
 
     @Test
-    void createReview_유효성검사_실패_rating_범위초과() throws Exception {
+    void createReview_유효성검사_실패_rating_범위초과_6() throws Exception {
         UUID orderId = UUID.randomUUID();
         UUID storeId = UUID.randomUUID();
 
@@ -116,6 +178,28 @@ class ReviewControllerTest {
                   "orderId":  "%s",
                   "storeId":  "%s",
                   "rating":   6,
+                  "content":  "맛있어요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+
+        verify(reviewService, never()).createReview(any(), any());
+    }
+
+    @Test
+    void createReview_유효성검사_실패_rating_범위미만_0() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        String requestBody = String.format("""
+                {
+                  "orderId":  "%s",
+                  "storeId":  "%s",
+                  "rating":   0,
                   "content":  "맛있어요"
                 }
                 """, orderId, storeId);
@@ -139,6 +223,27 @@ class ReviewControllerTest {
                   "storeId":  "%s",
                   "rating":   3,
                   "content":  "   "
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+
+        verify(reviewService, never()).createReview(any(), any());
+    }
+
+    @Test
+    void createReview_유효성검사_실패_content_null() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        String requestBody = String.format("""
+                {
+                  "orderId":  "%s",
+                  "storeId":  "%s",
+                  "rating":   3
                 }
                 """, orderId, storeId);
 
@@ -185,6 +290,36 @@ class ReviewControllerTest {
     }
 
     @Test
+    void updateReview_성공_경계값_rating_최댓값_5() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        ReviewUpdateResponse response = new ReviewUpdateResponse();
+        response.setReviewId(reviewId);
+        response.setRating(5);
+        response.setContent("정말 최고에요");
+        response.setUpdatedAt(LocalDateTime.now());
+
+        when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any())).thenReturn(response);
+
+        String requestBody = """
+                {
+                  "rating":  5,
+                  "content": "정말 최고에요"
+                }
+                """;
+
+        mockMvc.perform(put("/v1/reviews/" + reviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data.rating").value(5))
+                .andExpect(jsonPath("$.data.content").value("정말 최고에요"));
+
+        verify(reviewService, times(1)).updateReview(any(UserPrincipal.class), eq(reviewId), any());
+    }
+
+    @Test
     void updateReview_유효성검사_실패_필수필드_누락() throws Exception {
         UUID reviewId = UUID.randomUUID();
 
@@ -197,7 +332,7 @@ class ReviewControllerTest {
     }
 
     @Test
-    void updateReview_유효성검사_실패_rating_범위미만() throws Exception {
+    void updateReview_유효성검사_실패_rating_범위미만_0() throws Exception {
         UUID reviewId = UUID.randomUUID();
 
         String requestBody = """
@@ -215,8 +350,46 @@ class ReviewControllerTest {
         verify(reviewService, never()).updateReview(any(), any(), any());
     }
 
+    @Test
+    void updateReview_유효성검사_실패_rating_범위초과_6() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        String requestBody = """
+                {
+                  "rating":  6,
+                  "content": "너무 맛있어요"
+                }
+                """;
+
+        mockMvc.perform(put("/v1/reviews/" + reviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+
+        verify(reviewService, never()).updateReview(any(), any(), any());
+    }
+
+    @Test
+    void updateReview_유효성검사_실패_content_blank() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        String requestBody = """
+                {
+                  "rating":  3,
+                  "content": "   "
+                }
+                """;
+
+        mockMvc.perform(put("/v1/reviews/" + reviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+
+        verify(reviewService, never()).updateReview(any(), any(), any());
+    }
+
     // ───────────────────────────────────────────────
-    // GET /v1/reviews - 리뷰 목록 조회
+    // GET /v1/reviews - 리뷰 조회
     // ───────────────────────────────────────────────
 
     @Test
@@ -231,8 +404,32 @@ class ReviewControllerTest {
     }
 
     @Test
+    void getReviews_reviewId_단건조회_성공() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+        UUID storeId  = UUID.randomUUID();
+
+        ReviewResponse reviewResponse = ReviewResponse.builder()
+                .reviewId(reviewId)
+                .storeId(storeId)
+                .rating(5)
+                .content("맛있어요")
+                .build();
+
+        when(reviewService.getReviews(eq(reviewId), eq(null))).thenReturn(List.of(reviewResponse));
+
+        mockMvc.perform(get("/v1/reviews")
+                        .param("reviewId", reviewId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data[0].rating").value(5));
+
+        verify(reviewService, times(1)).getReviews(eq(reviewId), eq(null));
+    }
+
+    @Test
     void getReviews_storeId_필터_성공() throws Exception {
-        UUID storeId = UUID.randomUUID();
+        UUID storeId  = UUID.randomUUID();
         UUID reviewId = UUID.randomUUID();
 
         ReviewResponse reviewResponse = ReviewResponse.builder()
@@ -253,6 +450,18 @@ class ReviewControllerTest {
                 .andExpect(jsonPath("$.data[0].content").value("보통이에요"));
 
         verify(reviewService, times(1)).getReviews(null, storeId);
+    }
+
+    @Test
+    void getReviews_storeId_필터_결과없음_빈목록_반환() throws Exception {
+        UUID storeId = UUID.randomUUID();
+
+        when(reviewService.getReviews(null, storeId)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/v1/reviews")
+                        .param("storeId", storeId.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     // ───────────────────────────────────────────────

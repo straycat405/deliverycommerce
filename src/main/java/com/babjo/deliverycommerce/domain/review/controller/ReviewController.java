@@ -44,9 +44,10 @@ public class ReviewController {
     @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'MASTER')")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviews(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) UUID reviewId,
-            @RequestParam(required = false) UUID storeId
+            @RequestParam(required = false) UUID reviewId,  // 우선순위 1: 단건 조회
+            @RequestParam(required = false) UUID storeId    // 우선순위 2: 가게별 목록 조회
     ) {
+        // 파라미터 우선순위: reviewId > storeId > 전체(MANAGER/MASTER) 또는 본인(CUSTOMER/OWNER)
         return ApiResponse.ok("리뷰 조회 성공", reviewService.getReviews(principal, reviewId, storeId));
     }
 

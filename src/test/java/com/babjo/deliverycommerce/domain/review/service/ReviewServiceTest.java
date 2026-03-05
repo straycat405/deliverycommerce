@@ -83,9 +83,10 @@ class ReviewServiceTest {
         // given
         ReviewCreateRequest request = new ReviewCreateRequest();
 
-        ReviewCreateResponse expectedResponse = new ReviewCreateResponse();
-        expectedResponse.setRating(4);
-        expectedResponse.setContent("맛있어요");
+        ReviewCreateResponse expectedResponse = ReviewCreateResponse.builder()
+                .rating(4)
+                .content("맛있어요")
+                .build();
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.of(store));
@@ -107,9 +108,10 @@ class ReviewServiceTest {
         // given
         ReviewCreateRequest request = new ReviewCreateRequest();
 
-        ReviewCreateResponse expectedResponse = new ReviewCreateResponse();
-        expectedResponse.setRating(4);
-        expectedResponse.setContent("맛있어요");
+        ReviewCreateResponse expectedResponse = ReviewCreateResponse.builder()
+                .rating(4)
+                .content("맛있어요")
+                .build();
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.of(store));
@@ -415,10 +417,11 @@ class ReviewServiceTest {
         given(request.getRating()).willReturn(5);
         given(request.getContent()).willReturn("정말 맛있어요");
 
-        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
-        expectedResponse.setReviewId(reviewId);
-        expectedResponse.setRating(5);
-        expectedResponse.setContent("정말 맛있어요");
+        ReviewUpdateResponse expectedResponse = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(5)
+                .content("정말 맛있어요")
+                .build();
 
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
         given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
@@ -459,10 +462,11 @@ class ReviewServiceTest {
         given(request.getRating()).willReturn(3);
         given(request.getContent()).willReturn("관리자 수정");
 
-        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
-        expectedResponse.setReviewId(reviewId);
-        expectedResponse.setRating(3);
-        expectedResponse.setContent("관리자 수정");
+        ReviewUpdateResponse expectedResponse = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(3)
+                .content("관리자 수정")
+                .build();
 
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
         given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
@@ -483,10 +487,11 @@ class ReviewServiceTest {
         given(request.getRating()).willReturn(2);
         given(request.getContent()).willReturn("마스터 수정");
 
-        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
-        expectedResponse.setReviewId(reviewId);
-        expectedResponse.setRating(2);
-        expectedResponse.setContent("마스터 수정");
+        ReviewUpdateResponse expectedResponse = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(2)
+                .content("마스터 수정")
+                .build();
 
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
         given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
@@ -523,10 +528,11 @@ class ReviewServiceTest {
         given(request.getRating()).willReturn(2); // 4 → 2로 변경
         given(request.getContent()).willReturn("별로에요");
 
-        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
-        expectedResponse.setReviewId(reviewId);
-        expectedResponse.setRating(2);
-        expectedResponse.setContent("별로에요");
+        ReviewUpdateResponse expectedResponse = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(2)
+                .content("별로에요")
+                .build();
 
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
         given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
@@ -549,10 +555,11 @@ class ReviewServiceTest {
         given(request.getRating()).willReturn(4);  // oldRating == newRating
         given(request.getContent()).willReturn("내용만 수정");
 
-        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
-        expectedResponse.setReviewId(reviewId);
-        expectedResponse.setRating(4);
-        expectedResponse.setContent("내용만 수정");
+        ReviewUpdateResponse expectedResponse = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(4)
+                .content("내용만 수정")
+                .build();
 
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
         given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);

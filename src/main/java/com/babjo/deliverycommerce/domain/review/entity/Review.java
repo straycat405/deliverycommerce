@@ -50,7 +50,11 @@ public class Review extends BaseEntity {
     }
 
     public void updateReview(Integer rating, String content) {
-        this.rating = rating;
-        this.content = content;
+        if (rating != null) {
+            this.rating = rating;
+        }
+        if (content != null && !content.isBlank()) {
+            this.content = content;
+        }
     }
 }

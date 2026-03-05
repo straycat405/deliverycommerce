@@ -42,24 +42,24 @@ public class ReviewMapper {
     }
 
     public ReviewCreateResponse toCreateResponse(Review review) {
-        ReviewCreateResponse response = new ReviewCreateResponse();
-        response.setReviewId(review.getReviewId());
-        response.setUserId(review.getUser().getUserId());
-        // [TODO] Order 연결 후 주석 해제
-        // response.setOrderId(review.getOrder().getOrderId());
-        response.setStoreId(review.getStore().getStoreId());
-        response.setRating(review.getRating());
-        response.setContent(review.getContent());
-        response.setCreatedAt(review.getCreatedAt());
-        return response;
+        return ReviewCreateResponse.builder()
+                .reviewId(review.getReviewId())
+                .userId(review.getUser().getUserId())
+                // [TODO] Order 연결 후 주석 해제
+                // .orderId(review.getOrder().getOrderId())
+                .storeId(review.getStore().getStoreId())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .createdAt(review.getCreatedAt())
+                .build();
     }
 
     public ReviewUpdateResponse toUpdateResponse(Review review) {
-        ReviewUpdateResponse response = new ReviewUpdateResponse();
-        response.setReviewId(review.getReviewId());
-        response.setRating(review.getRating());
-        response.setContent(review.getContent());
-        response.setUpdatedAt(review.getUpdatedAt());
-        return response;
+        return ReviewUpdateResponse.builder()
+                .reviewId(review.getReviewId())
+                .rating(review.getRating())
+                .content(review.getContent())
+                .updatedAt(review.getUpdatedAt())
+                .build();
     }
 }

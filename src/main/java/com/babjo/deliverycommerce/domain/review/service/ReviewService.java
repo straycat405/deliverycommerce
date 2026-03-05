@@ -10,6 +10,7 @@ import com.babjo.deliverycommerce.domain.review.mapper.ReviewMapper;
 import com.babjo.deliverycommerce.domain.review.repository.ReviewRepository;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -83,7 +84,7 @@ public class ReviewService {
             Review review = reviewRepository.findByReviewId(reviewId)
                     .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-            boolean isAdminRole = principal.getRole().equals("MANAGER") || principal.getRole().equals("MASTER");
+            boolean isAdminRole = isAdminRole(principal);
             if (!isAdminRole && !review.getUser().getUserId().equals(principal.getUserId())) {
                 throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
             }
@@ -102,8 +103,7 @@ public class ReviewService {
         // 파라미터 없는 전체 조회
         // CUSTOMER: 본인이 작성한 리뷰만 반환
         // MANAGER / MASTER: 전체 리뷰 반환
-        boolean isAdminRole = principal.getRole().equals("MANAGER") || principal.getRole().equals("MASTER");
-        if (isAdminRole) {
+        if (isAdminRole(principal)) {
             return reviewRepository.findAll()
                     .stream()
                     .map(reviewMapper::toResponse)
@@ -123,9 +123,7 @@ public class ReviewService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // 작성자 또는 MANAGER/MASTER만 삭제 가능
-        if (!review.getUser().getUserId().equals(principal.getUserId())
-                && !principal.getRole().equals("MANAGER")
-                && !principal.getRole().equals("MASTER")) {
+        if (!review.getUser().getUserId().equals(principal.getUserId()) && !isAdminRole(principal)) {
             throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         }
 
@@ -148,9 +146,7 @@ public class ReviewService {
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
         // 작성자 또는 MANAGER/MASTER만 수정 가능
-        if (!review.getUser().getUserId().equals(principal.getUserId())
-                && !principal.getRole().equals("MANAGER")
-                && !principal.getRole().equals("MASTER")) {
+        if (!review.getUser().getUserId().equals(principal.getUserId()) && !isAdminRole(principal)) {
             throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         }
 
@@ -159,13 +155,22 @@ public class ReviewService {
         // 수정 처리 (updatedAt은 @LastModifiedDate 로 자동 갱신)
         review.updateReview(updateRequest.getRating(), updateRequest.getContent());
 
-        // 별점이 변경된 경우에만 Store 통계 갱신 (null-safe: @Valid로 보장되나 방어적 처리)
-        if (updateRequest.getRating() != null && oldRating != updateRequest.getRating()) {
+        // 별점이 변경된 경우에만 Store 통계 갱신
+        if (oldRating != updateRequest.getRating()) {
             Store store = review.getStore();
             store.updateReviewRating(oldRating, updateRequest.getRating());
             storeRepository.save(store);
         }
 
         return reviewMapper.toUpdateResponse(review);
+    }
+
+    /**
+     * MANAGER 또는 MASTER 권한 여부 확인
+     * 역할 비교는 UserEnumRole enum 상수를 사용하여 하드코딩 오류를 방지합니다.
+     */
+    private boolean isAdminRole(UserPrincipal principal) {
+        String role = principal.getRole();
+        return UserEnumRole.MANAGER.name().equals(role) || UserEnumRole.MASTER.name().equals(role);
     }
 }

@@ -69,14 +69,15 @@ class ReviewControllerTest {
         UUID storeId  = UUID.randomUUID();
         UUID reviewId = UUID.randomUUID();
 
-        ReviewCreateResponse response = new ReviewCreateResponse();
-        response.setReviewId(reviewId);
-        response.setUserId(1L);
-        response.setOrderId(orderId);
-        response.setStoreId(storeId);
-        response.setRating(4);
-        response.setContent("맛있어요");
-        response.setCreatedAt(LocalDateTime.now());
+        ReviewCreateResponse response = ReviewCreateResponse.builder()
+                .reviewId(reviewId)
+                .userId(1L)
+                .orderId(orderId)
+                .storeId(storeId)
+                .rating(4)
+                .content("맛있어요")
+                .createdAt(LocalDateTime.now())
+                .build();
 
         when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
 
@@ -109,13 +110,14 @@ class ReviewControllerTest {
         UUID storeId  = UUID.randomUUID();
         UUID reviewId = UUID.randomUUID();
 
-        ReviewCreateResponse response = new ReviewCreateResponse();
-        response.setReviewId(reviewId);
-        response.setUserId(1L);
-        response.setStoreId(storeId);
-        response.setRating(1);
-        response.setContent("별로에요");
-        response.setCreatedAt(LocalDateTime.now());
+        ReviewCreateResponse response = ReviewCreateResponse.builder()
+                .reviewId(reviewId)
+                .userId(1L)
+                .storeId(storeId)
+                .rating(1)
+                .content("별로에요")
+                .createdAt(LocalDateTime.now())
+                .build();
 
         when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
 
@@ -141,13 +143,14 @@ class ReviewControllerTest {
         UUID storeId  = UUID.randomUUID();
         UUID reviewId = UUID.randomUUID();
 
-        ReviewCreateResponse response = new ReviewCreateResponse();
-        response.setReviewId(reviewId);
-        response.setUserId(1L);
-        response.setStoreId(storeId);
-        response.setRating(5);
-        response.setContent("최고에요");
-        response.setCreatedAt(LocalDateTime.now());
+        ReviewCreateResponse response = ReviewCreateResponse.builder()
+                .reviewId(reviewId)
+                .userId(1L)
+                .storeId(storeId)
+                .rating(5)
+                .content("최고에요")
+                .createdAt(LocalDateTime.now())
+                .build();
 
         when(reviewService.createReview(any(UserPrincipal.class), any())).thenReturn(response);
 
@@ -295,11 +298,12 @@ class ReviewControllerTest {
     void updateReview_성공() throws Exception {
         UUID reviewId = UUID.randomUUID();
 
-        ReviewUpdateResponse response = new ReviewUpdateResponse();
-        response.setReviewId(reviewId);
-        response.setRating(5);
-        response.setContent("정말 맛있어요");
-        response.setUpdatedAt(LocalDateTime.now());
+        ReviewUpdateResponse response = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(5)
+                .content("정말 맛있어요")
+                .updatedAt(LocalDateTime.now())
+                .build();
 
         when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any())).thenReturn(response);
 
@@ -325,11 +329,12 @@ class ReviewControllerTest {
     void updateReview_성공_경계값_rating_최댓값_5() throws Exception {
         UUID reviewId = UUID.randomUUID();
 
-        ReviewUpdateResponse response = new ReviewUpdateResponse();
-        response.setReviewId(reviewId);
-        response.setRating(5);
-        response.setContent("정말 최고에요");
-        response.setUpdatedAt(LocalDateTime.now());
+        ReviewUpdateResponse response = ReviewUpdateResponse.builder()
+                .reviewId(reviewId)
+                .rating(5)
+                .content("정말 최고에요")
+                .updatedAt(LocalDateTime.now())
+                .build();
 
         when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any())).thenReturn(response);
 

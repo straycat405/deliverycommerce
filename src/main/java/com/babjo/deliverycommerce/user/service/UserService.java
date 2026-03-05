@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
+import com.babjo.deliverycommerce.global.redis.UserAuthCache;
+import com.babjo.deliverycommerce.global.redis.UserAuthCacheManager;
 import com.babjo.deliverycommerce.user.dto.*;
 import com.babjo.deliverycommerce.user.entity.User;
 import com.babjo.deliverycommerce.user.repository.UserQueryRepository;
@@ -34,6 +36,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    private final UserAuthCacheManager userAuthCacheManager;
 
 
     // 회원가입
@@ -94,10 +97,20 @@ public class UserService {
             throw new CustomException(ErrorCode.LOGIN_FAILED);
         }
 
-        // Access Token 생성
-        String accessToken = jwtUtil.createAccessToken(
-                user.getUserId(), user.getUsername(), user.getRole().name()
-        );
+        /**
+         * AccessToken 생성
+         * 1) Redis에서 UserAuthCache 조회 (authVersion 추출 용도)
+         * 2) 없으면 새로 생성 후 save
+         */
+        UserAuthCache cache = userAuthCacheManager.get(user.getUserId());
+        if (cache == null) {
+            cache = new UserAuthCache("ACTIVE", user.getRole().getAuthority(), 1, user.getUsername());
+        }
+        // 로그인 사용자 캐시 30일 보관 (로그인 때마다 갱신)
+        userAuthCacheManager.saveWithTtl(user.getUserId(), cache, 30,TimeUnit.DAYS);
+
+        String accessToken = jwtUtil.createAccessToken(user.getUserId(), cache.getAuthVersion());
+
         log.debug("Access token={}", accessToken);
 
         // Refresh Token 생성
@@ -163,9 +176,15 @@ public class UserService {
         }
 
         // 새 Access Token + Refresh Token 발급
-        String newAccessToken = jwtUtil.createAccessToken(
-                user.getUserId(), user.getUsername(), user.getRole().name()
-        );
+
+        UserAuthCache cache = userAuthCacheManager.get(user.getUserId());
+        if (cache == null) {
+            cache = new UserAuthCache("ACTIVE", user.getRole().getAuthority(), 1, user.getUsername());
+        }
+        userAuthCacheManager.saveWithTtl(user.getUserId(), cache, 30, TimeUnit.DAYS); // TTL 갱신
+
+        String newAccessToken = jwtUtil.createAccessToken(user.getUserId(), cache.getAuthVersion());
+
         log.debug("Reissued Access token={}", newAccessToken);
         String newRefreshToken = jwtUtil.createRefreshToken(user.getUserId());
         log.debug("Reissued Refresh token={}", newRefreshToken);
@@ -267,6 +286,20 @@ public class UserService {
 
         userRepository.flush();
 
+        // username이 변경된 경우 cache의 username 동기화
+        if (requestDto.getUsername() != null) {
+            UserAuthCache currentCache = userAuthCacheManager.get(userId);
+            if (currentCache != null) {
+                userAuthCacheManager.saveWithTtl(userId, new UserAuthCache(
+                        currentCache.getStatus(), // 나머지는 그대로
+                        currentCache.getRole(),
+                        currentCache.getAuthVersion(),
+                        user.getUsername()  // 변경 완료된 username값
+                ),30,  TimeUnit.DAYS);
+            }
+        }
+
+
 
         return new UserUpdateResponseDto(user);
     }
@@ -306,6 +339,18 @@ public class UserService {
 
         userRepository.flush();
 
+        // username이 변경된 경우 cache의 username 동기화
+        if (requestDto.getUsername() != null) {
+            UserAuthCache currentCache = userAuthCacheManager.get(userId);
+            if (currentCache != null) {
+                userAuthCacheManager.save(userId, new UserAuthCache(
+                        currentCache.getStatus(),
+                        currentCache.getRole(),
+                        currentCache.getAuthVersion(),
+                        user.getUsername()  // 변경 완료된 값
+                ));
+            }
+        }
 
         return new UserUpdateResponseDto(user);
     }
@@ -332,6 +377,16 @@ public class UserService {
         // 맞으면 해당 userId 레코드 delete처리
         user.delete(userId);
 
+        // Redis auth cache → DELETED 처리 (즉시 차단 - AccessToken 지속시간 15분동안)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int currentVersion = (currentCache != null) ? currentCache.getAuthVersion() : 1;
+        String currentRole  = (currentCache != null) ? currentCache.getRole() : user.getRole().getAuthority();
+        userAuthCacheManager.saveWithTtl(userId,
+                new UserAuthCache("DELETED", currentRole, currentVersion, user.getUsername()), 15,TimeUnit.MINUTES);
+
+        // Refresh Token 삭제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
+
         // 응답에 userId,username,deletedAt 담아서 반환
         return new UserDeleteResponseDto(user.getUserId(), user.getUsername(), user.getDeletedAt());
     }
@@ -355,8 +410,20 @@ public class UserService {
             throw new CustomException(ErrorCode.WITHDRAWN_USER);
         }
 
+        // 해당 유저가 MASTER면 예외처리
+        if (user.getRole() == UserEnumRole.MASTER) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
         // 해당 userId 레코드 delete처리
         user.delete(adminUserId);
+
+        // Redis auth cache → DELETED 처리 (즉시 차단)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int currentVersion = (currentCache != null) ? currentCache.getAuthVersion() : 1;
+        String currentRole  = (currentCache != null) ? currentCache.getRole() : user.getRole().getAuthority();
+        userAuthCacheManager.save(userId,
+                new UserAuthCache("DELETED", currentRole, currentVersion, user.getUsername()));
 
         // Redis에 삭제한 사용자의 refresh token이 존재한다면 삭제
         redisUtil.delete(RedisKeys.refreshKey(userId));
@@ -393,6 +460,15 @@ public class UserService {
         // 사용자 권한 수정
         user.updateRoleUser(UserEnumRole.of(role));
         userRepository.flush();
+
+        // Redis auth cache 즉시 갱신 (authVersion 증가 → 기존 토큰 즉시 무효화)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int newAuthVersion = (currentCache != null) ? currentCache.getAuthVersion() + 1 : 1;
+        userAuthCacheManager.save(userId,
+                new UserAuthCache("ACTIVE", user.getRole().getAuthority(), newAuthVersion, user.getUsername()));
+
+        // Refresh Token 삭제 → 재로그인 강제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
 
         return new AdminUserUpdateRoleResponseDto(user.getUserId(), user.getUsername(), user.getRole().name(), user.getUpdatedAt());
     }

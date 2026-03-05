@@ -50,6 +50,8 @@ import com.babjo.deliverycommerce.global.jwt.JwtAuthenticationEntryPoint;
 import com.babjo.deliverycommerce.global.jwt.JwtAuthorizationFilter;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
+import com.babjo.deliverycommerce.global.redis.UserAuthCacheManager;
+import com.babjo.deliverycommerce.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -75,11 +77,13 @@ public class WebSecurityConfig {
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
     private final RedisUtil redisUtil;
     private final ObjectMapper objectMapper;
+    private final UserAuthCacheManager userAuthCacheManager;
+    private final UserRepository userRepository;
 
     // JwtAuthorizationFilter도 @Component가 아니므로 직접 빈으로 등록
     @Bean
     public JwtAuthorizationFilter jwtAuthorizationFilter() {
-        return new JwtAuthorizationFilter(jwtUtil, redisUtil, objectMapper);
+        return new JwtAuthorizationFilter(jwtUtil, redisUtil, objectMapper, userAuthCacheManager, userRepository);
     }
 
     @Bean
@@ -106,8 +110,7 @@ public class WebSecurityConfig {
                 )
 
                 // 필터 실행 순서:
-                // JwtAuthorizationFilter → JwtAuthenticationFilter → UsernamePasswordAuthenticationFilter
-                // 토큰 검증을 먼저 수행하고, 로그인 요청은 JwtAuthenticationFilter가 처리
+                // JwtAuthorizationFilter → UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthorizationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

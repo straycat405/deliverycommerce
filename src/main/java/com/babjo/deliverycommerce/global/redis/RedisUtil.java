@@ -3,7 +3,6 @@ package com.babjo.deliverycommerce.global.redis;
 
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
@@ -25,6 +24,19 @@ public class RedisUtil {
     public void set(String key, String value, long duration, TimeUnit timeUnit) {
         try {
             redisTemplate.opsForValue().set(key, value, duration, timeUnit);
+        } catch (DataAccessException e) {
+            log.error("[Redis] set 실패 - key: {}, error: {}", key, e.getMessage());
+            throw new CustomException(ErrorCode.REDIS_OPERATION_FAILED);
+        }
+    }
+
+    /**
+     * 값 저장 (TTL 없음, 영구 저장)
+     * ex) user:{userId}:auth 저장 시 사용
+     */
+    public void set(String key, String value) {
+        try {
+            redisTemplate.opsForValue().set(key, value);
         } catch (DataAccessException e) {
             log.error("[Redis] set 실패 - key: {}, error: {}", key, e.getMessage());
             throw new CustomException(ErrorCode.REDIS_OPERATION_FAILED);

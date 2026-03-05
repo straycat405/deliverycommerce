@@ -43,9 +43,9 @@ public class UserController {
     @Operation(
             summary = "회원가입",
             description = """                                                                                                                                                                                                         
-                    - 새로운 사용자를 등록합니다.                                                                                                                                                                                           
+                    - 새로운 사용자를 등록합니다.        
                     - username: 4~10자, 소문자+숫자                                                                                                                                                                      
-                    - password: 8~15자, 대소문자+숫자+특수문자 필수 포함                                                                                                                                                                            
+                    - password: 8~15자, 대소문자+숫자+특수문자 필수 포함
                     - role: CUSTOMER, OWNER만 입력 가능                                                                                                                                                                            
                     """
     )
@@ -69,6 +69,14 @@ public class UserController {
             description = """
                     - 아이디 / 비밀번호를 검증 후 로그인합니다.
                     - 로그인에 성공하면 AccessToken, RefreshToken이 발급됩니다.
+                    - 로그인 시점의 authVersion으로 Redis에 키를 저장합니다.
+                    - Redis key = ("user:{userId}:auth")
+                    - Redis Value = "{
+                                    \"status\":\"ACTIVE\",
+                                    \"role\":\"ROLE_MASTER\",
+                                    \"authVersion\":1,
+                                    \"username\":\"master1\"
+                                    }"
                     - Redis에 refreshToken을 7일 저장합니다.
                     """
     )
@@ -158,6 +166,7 @@ public class UserController {
                     - 로그인 중인 사용자의 토큰을 인증 후 재발급합니다.
                     - 새로운 Access Token은 responseDto에,
                     - 새로운 Refresh Token은 Cookie에 세팅합니다.
+                    - 저장된 토큰값과 쿠키로 받은 토큰값이 불일치할 경우, 즉시 저장된 Redis의 해당 refreshToken을 삭제합니다 (탈취 시나리오 대응)
                     """
     )
     @ApiResponses({
@@ -312,7 +321,7 @@ public class UserController {
                     - [권한] 로그인 유저 본인의 계정만 가능합니다.
                     - Soft Delete 정책으로, deletedAt, deletedBy 컬럼을 업데이트합니다. (물리적 삭제 X)
                     - 비밀번호 입력 검증이 필요합니다. (본인확인용)
-                    - 처리가 끝나면 요청에 사용된 Access Token은 블랙리스트 처리됩니다.
+                    - 처리가 끝나면 해당 사용자의 Redis Cache의 "ACTIVE"상태를 "DELETED"상태로 전환합니다. (TTL 15분)
                     - 로그인 상태였던 계정의 Refresh Token도 Redis 메모리에서 삭제됩니다.
                     - 로그아웃과 동일하게 Refresh Token Cookie를 만료 처리합니다. (클라이언트 쿠키 무효화)
                     """
@@ -367,6 +376,7 @@ public class UserController {
                     - 관리자가 특정 사용자를 탈퇴 처리합니다.
                     - [권한] MANAGER / MASTER만 사용 가능합니다.
                     - 탈퇴 후 Redis에서 탈퇴 처리한 사용자의 Refresh Token이 있다면 삭제합니다.
+                    - 탈퇴처리한 사용자의 Redis Cache를 "DELETED"상태로 전환 (TTL 없음, 영구저장)
                     """
     )
     @ApiResponses({
@@ -397,8 +407,8 @@ public class UserController {
                     - 본인의 권한은 변경 불가능합니다.
                     - 다른 MASTER의 권한은 변경 불가능합니다.
                     - 변경 가능한 권한값은 (CUSTOMER / OWNER / MANAGER)입니다.
-                    - 변경 후 Redis에서 권한 변경 처리한 사용자의 Refresh Token이 있다면 삭제합니다.
-                    - 변경된 권한은 재로그인 (토큰 재발급) 이후부터 적용됩니다.
+                    - 변경된 사용자의 Redis Cache에서 authVersion을 +1 해서 저장합니다. (기존 토큰 사용 불가)
+                    - 변경된 사용자의 Refresh Key를 Redis에서 삭제합니다. (재로그인 요구)
                     """
     )
     @ApiResponses({

@@ -16,8 +16,5 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
 
     Optional<CartItem> findByCartIdAndProductIdAndDeletedAtIsNull(UUID cartId, UUID productId);
 
-    /*장바구니에 남은 항목 있는지 확인용*/
-    boolean existsCartIdAndDeletedAtIsNull(UUID cartId);
-
     boolean existsByCartIdAndDeletedAtIsNull(UUID cartId);
 }

@@ -72,6 +72,29 @@ public class CartService {
         return buildCartResponse(cart);
     }
 
+    @Transactional
+    public void deleteItem(Long userId, UUID cartItemId) {
+        log.info("장바구니 항목 삭제 요청: userId={}, cartItemId={}", userId, cartItemId);
+
+        CartItem cartItem = cartItemRepository.findByCartItemIdAndDeletedAtIsNull(cartItemId).orElseThrow(() -> new CustomException(ErrorCode.CART_ITEM_NOT_FOUND));
+
+        Cart cart = cartRepository.findByCartIdAndDeletedAtIsNull(cartItem.getCartId()).orElseThrow(() -> new CustomException(ErrorCode.CART_FORBIDDEN));
+
+        validateCartOwner(cart, userId);
+
+        cartItem.delete(userId);
+
+        boolean hasRemainingItems = cartItemRepository.existsByCartIdAndDeletedAtIsNull(cart.getCartId());
+
+        if (!hasRemainingItems) {
+            cart.clearStore();
+            log.info("장바구니가 비어 storeId 초기화: cartId={}, userId={}", cart.getCartId(), userId);
+        }
+
+        log.info("장바구니 항목 삭제 완료: userId={}, cartId={}, cartItemId={}",
+                userId, cart.getCartId(), cartItemId);
+    }
+
     /*내 장바구니인지 확인*/
     private void validateCartOwner(Cart cart, Long userId) {
         if (!cart.getUserId().equals(userId)) {

@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SignupRequestDto {
+public class AdminSignupRequestDto {
 
     @NotBlank(message = "아이디는 필수 입력값입니다.")
     @Pattern(
@@ -39,7 +39,7 @@ public class SignupRequestDto {
     private String nickname;
 
     @NotBlank(message = "role은 필수 입력값입니다.")
-    @Pattern(regexp = "CUSTOMER|OWNER",
-            message = "Role은 CUSTOMER 또는 OWNER만 가능합니다.")
+    @Pattern(regexp = "CUSTOMER|OWNER|MANAGER",
+            message = "Role은 CUSTOMER,OWNER,MANAGER만 가능합니다.")
     private String role;
 }

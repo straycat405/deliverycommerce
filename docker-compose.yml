@@ -10,6 +10,14 @@ services:
       POSTGRES_DB: deliverycommerce
       POSTGRES_USER: babjo
       POSTGRES_PASSWORD: babjo1234
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"  #인코딩 설정 (가나다순 정렬 지원)
+
+      # 기존 도커 올리신 분들은
+      # docker compose down
+      # docker volume rm com.babjo.deliverycommerce_postgres-data
+      # docker compose up -d
+      # 순서대로 해서 기존 데이터 지우고 새로 작성
+
     ports:
       - "5432:5432"
     volumes:

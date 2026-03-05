@@ -21,8 +21,8 @@ public class JwtUtil {
 
     // Authorization Header KEY
     public static final String AUTHORIZATION_HEADER = "Authorization";
-    // JWT payload에 담을 권한 (role) 클레임 키
-    public static final String AUTHORIZATION_KEY = "roles";
+    // 보안 리팩토링으로 payload에는 권한 정보 담지 않음
+    public static final String AUTH_VERSION_KEY = "ver";
     // Bearer 토큰 식별자 (헤더값 파싱 시 제거)
     public static final String BEARER_PREFIX = "Bearer ";
 
@@ -47,18 +47,25 @@ public class JwtUtil {
 
     /**
      * Access Token 생성
-     * payload에 userId, username, role 담아서 서명
+     * payload에 userId, authVersion 2가지 담습니다.
+     * role은 Redis에서 실시간 조회 — JWT에 포함하지 않음
+     * JWT + Redis 기반 사용자 인증 상태 캐싱 + auth version 전략
+     * 유저 탈퇴, 권한 변경 등 상황에 AccessToken 추적 불가능 > 보안 공백 위험 최소화
+     * 트레이드오프 : DB부하 stateless jwt 방식일때보다 증가
      *
-     * @param userId
-     * @param username
-     * @param role     ( CUSTOMER / OWNER / MANAGER / MASTER )
+     * Payload
+     * {
+     *     "sub": "1", // userId
+     *     "ver": 1,   // authVersion
+     *     "iat": ..., // issuedAt
+     *     "exp": ... // expiration
+     * }
      */
-    public String createAccessToken(Long userId, String username, String role) {
+    public String createAccessToken(Long userId, int authVersion) {
         Date now = new Date();
         return BEARER_PREFIX + Jwts.builder()
-                .subject(String.valueOf(userId)) // sub 클레임 = userId
-                .claim("username", username)
-                .claim(AUTHORIZATION_KEY, role) // auth 클레임 = role
+                .subject(String.valueOf(userId))
+                .claim(AUTH_VERSION_KEY, authVersion)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + jwtAccessExpiration))
                 .signWith(key)
@@ -68,8 +75,6 @@ public class JwtUtil {
     /**
      * Refresh Token 생성
      * Access Token 재발급 용도로만 사용 (payload 최소화)
-     *
-     * @param userId 사용자 PK
      */
     public String createRefreshToken(Long userId) {
         Date now = new Date();
@@ -97,14 +102,6 @@ public class JwtUtil {
      */
     public Claims getUserInfoFromToken(String token) {
         return parseToken(token);
-    }
-
-    /**
-     * 유효성 검사 — 재발급 등 별도 분기 필요 시 사용
-     */
-    public boolean validateToken(String token) {
-        parseToken(token); // 예외 안 나면 유효한 것
-        return true;
     }
 
     /**

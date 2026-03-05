@@ -8,7 +8,7 @@ package com.babjo.deliverycommerce.global.exception;
  *
  *  새 에러코드 추가할때
  *  1. 본인 도메인 영역 주석 아래에 추가
- *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "한글 메시지")
+ *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "메시지 내용")
  *  ex) ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다.")
  *  3. develop 브랜치에 PR 날려서 충돌 방지할 것 (동시 수정 지양)
  *  4. 에러코드 문자열( 2nd Parameter)는 EUNM 이름과 동일하게
@@ -40,6 +40,8 @@ public enum ErrorCode {
     WITHDRAWN_USER(HttpStatus.BAD_REQUEST, "WITHDRAWN_USER", "탈퇴한 계정입니다."),
     INVALID_ROLE(HttpStatus.BAD_REQUEST, "INVALID_ROLE", "유효하지 않은 권한 값입니다."),
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "LOGIN_FAILED", "아이디 또는 비밀번호가 올바르지 않습니다."),
+    CANNOT_DELETE_SELF(HttpStatus.FORBIDDEN,"CANNOT_DELETE_SELF","본인 계정은 삭제할 수 없습니다."),
+    CANNOT_UPDATE_ROLE_SELF(HttpStatus.FORBIDDEN,"CANNOT_UPDATE_ROLE_SELF","본인 권한은 변경할 수 없습니다."),
 
     // ── Common ────────────────────────────────────────
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 유효하지 않습니다."),

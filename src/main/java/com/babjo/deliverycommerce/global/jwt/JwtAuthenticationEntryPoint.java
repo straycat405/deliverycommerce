@@ -5,10 +5,10 @@ package com.babjo.deliverycommerce.global.jwt;
  * GlobalExceptionHandler를 거치지 않으므로 별도로 작성합니다.
  *
  * @RestControllerAdvice가 개입하기 전에 응답이 나가므로 ObjectMapper로 직접 JSON을 직렬화해서 응답합니다.
- * ApiResponse.error(ErrorCode)는 동일하게 재사용합니다.
+ * CommonResponse.error(ErrorCode)는 동일하게 재사용합니다.
  */
 
-import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
+import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,8 +33,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json;charset=UTF-8");
 
-        // 기존 ApiResponse.error() 형식 그대로 사용
-        String body = objectMapper.writeValueAsString(ApiResponse.error(ErrorCode.UNAUTHORIZED));
+        // 기존 CommonResponse.error() 형식 그대로 사용
+        String body = objectMapper.writeValueAsString(CommonResponse.error(ErrorCode.UNAUTHORIZED));
         response.getWriter().write(body);
     }
 }

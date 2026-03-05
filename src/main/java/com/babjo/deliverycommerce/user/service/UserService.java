@@ -6,12 +6,13 @@ import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
+import com.babjo.deliverycommerce.global.redis.UserAuthCache;
+import com.babjo.deliverycommerce.global.redis.UserAuthCacheManager;
 import com.babjo.deliverycommerce.user.dto.*;
 import com.babjo.deliverycommerce.user.entity.User;
 import com.babjo.deliverycommerce.user.repository.UserQueryRepository;
 import com.babjo.deliverycommerce.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    private final UserAuthCacheManager userAuthCacheManager;
 
 
     // 회원가입
@@ -78,25 +80,37 @@ public class UserService {
     }
 
     // 로그인
-    @Transactional
-    public LoginResponseDto login(@Valid LoginRequestDto requestDto) {
+    public LoginResponseDto login(LoginRequestDto requestDto) {
 
         // username 없음 | passsword 불일치 -> LOGIN_FAILED 반환 (User Enumeration 방지)
         // 공격자로 하여금 username 존재 여부를 추론할 수 없게 하는 것이 목적
         User user = userRepository.findByUsername(requestDto.getUsername())
                 .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_FAILED));
 
-
+        // User Enumeration 방지
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.LOGIN_FAILED);
+        }
 
         // 패스워드 불일치 (LOGIN_FAILED로 통합)
         if (!passwordEncoder.matches(requestDto.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.LOGIN_FAILED);
         }
 
-        // Access Token 생성
-        String accessToken = jwtUtil.createAccessToken(
-                user.getUserId(), user.getUsername(), user.getRole().name()
-        );
+        /**
+         * AccessToken 생성
+         * 1) Redis에서 UserAuthCache 조회 (authVersion 추출 용도)
+         * 2) 없으면 새로 생성 후 save
+         */
+        UserAuthCache cache = userAuthCacheManager.get(user.getUserId());
+        if (cache == null) {
+            cache = new UserAuthCache("ACTIVE", user.getRole().getAuthority(), 1, user.getUsername());
+        }
+        // 로그인 사용자 캐시 30일 보관 (로그인 때마다 갱신)
+        userAuthCacheManager.saveWithTtl(user.getUserId(), cache, 30,TimeUnit.DAYS);
+
+        String accessToken = jwtUtil.createAccessToken(user.getUserId(), cache.getAuthVersion());
+
         log.debug("Access token={}", accessToken);
 
         // Refresh Token 생성
@@ -121,7 +135,6 @@ public class UserService {
      * 토큰 재발급
      * Refresh Token 검증 후 새로운 Access Token + Refresh Token 발급
      */
-    @Transactional
     public LoginResponseDto reissue(String refreshToken) {
         log.debug("reissue 호출됨, refreshToken={}", refreshToken);
 
@@ -130,15 +143,16 @@ public class UserService {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
+        Long userId = null;
+
         // Refresh Token 유효성 검증 + userId 추출
         Claims info;
         try {
             info = jwtUtil.getUserInfoFromToken(refreshToken);
-        } catch (CustomException e) {
+            userId = Long.valueOf(info.getSubject());
+        } catch (CustomException | NumberFormatException e) {
             throw new CustomException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
-
-        Long userId = Long.valueOf(info.getSubject());
 
         // 사용자 존재 및 탈퇴 여부 확인
         User user = userRepository.findById(userId)
@@ -162,9 +176,15 @@ public class UserService {
         }
 
         // 새 Access Token + Refresh Token 발급
-        String newAccessToken = jwtUtil.createAccessToken(
-                user.getUserId(), user.getUsername(), user.getRole().name()
-        );
+
+        UserAuthCache cache = userAuthCacheManager.get(user.getUserId());
+        if (cache == null) {
+            cache = new UserAuthCache("ACTIVE", user.getRole().getAuthority(), 1, user.getUsername());
+        }
+        userAuthCacheManager.saveWithTtl(user.getUserId(), cache, 30, TimeUnit.DAYS); // TTL 갱신
+
+        String newAccessToken = jwtUtil.createAccessToken(user.getUserId(), cache.getAuthVersion());
+
         log.debug("Reissued Access token={}", newAccessToken);
         String newRefreshToken = jwtUtil.createRefreshToken(user.getUserId());
         log.debug("Reissued Refresh token={}", newRefreshToken);
@@ -189,6 +209,10 @@ public class UserService {
         // 사용자 조회 시도
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
 
         return new UserResponseDto(user);
     }
@@ -217,16 +241,20 @@ public class UserService {
      * 사용자 정보 수정 (본인)
      */
     @Transactional
-    public UserUpdateResponseDto updateUser(@Valid UserUpdateRequestDto requestDto, long userId) {
+    public UserUpdateResponseDto updateUser(UserUpdateRequestDto requestDto, long userId) {
 
         // 기존 유저 정보
         User user = userRepository.findById(userId).orElseThrow(
                 () -> new CustomException(ErrorCode.USER_NOT_FOUND)
         );
 
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
         // prePw 불일치시 예외 (항상 검증)
         if (!passwordEncoder.matches(requestDto.getPrePw(), user.getPassword())) {
-            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
         }
 
         // username 중복시 예외 던짐
@@ -256,6 +284,235 @@ public class UserService {
                 requestDto.getNickname()
         );
 
+        userRepository.flush();
+
+        // username이 변경된 경우 cache의 username 동기화
+        if (requestDto.getUsername() != null) {
+            UserAuthCache currentCache = userAuthCacheManager.get(userId);
+            if (currentCache != null) {
+                userAuthCacheManager.saveWithTtl(userId, new UserAuthCache(
+                        currentCache.getStatus(), // 나머지는 그대로
+                        currentCache.getRole(),
+                        currentCache.getAuthVersion(),
+                        user.getUsername()  // 변경 완료된 username값
+                ),30,  TimeUnit.DAYS);
+            }
+        }
+
+
+
         return new UserUpdateResponseDto(user);
+    }
+
+    /**
+     * 사용자 정보 수정 (관리자용)
+     */
+    @Transactional
+    public UserUpdateResponseDto adminUpdateUser(AdminUserUpdateRequestDto requestDto, long userId) {
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
+        //username 변경시 본인 제외 중복체크
+        if (requestDto.getUsername() != null
+                && !requestDto.getUsername().equals(user.getUsername())
+                && userRepository.existsByUsernameAll(requestDto.getUsername())) {
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
+        }
+        //email 변경시 본인 제외 중복체크
+        if (requestDto.getEmail() != null
+                && !requestDto.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmailAll(requestDto.getEmail())) {
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+        }
+        //user.updateUser()호출
+        user.updateUser(
+                requestDto.getUsername(),
+                null, // 비밀번호는 변경하지 않음
+                requestDto.getEmail(),
+                requestDto.getNickname()
+        );
+
+        userRepository.flush();
+
+        // username이 변경된 경우 cache의 username 동기화
+        if (requestDto.getUsername() != null) {
+            UserAuthCache currentCache = userAuthCacheManager.get(userId);
+            if (currentCache != null) {
+                userAuthCacheManager.save(userId, new UserAuthCache(
+                        currentCache.getStatus(),
+                        currentCache.getRole(),
+                        currentCache.getAuthVersion(),
+                        user.getUsername()  // 변경 완료된 값
+                ));
+            }
+        }
+
+        return new UserUpdateResponseDto(user);
+    }
+
+    /**
+     * 사용자 삭제 처리 (본인)
+     */
+    @Transactional
+    public UserDeleteResponseDto deleteUser(Long userId, String password) {
+        // 사용자 정보 추출
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
+        //비밀번호 검증 (틀리면 예외)
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new CustomException(ErrorCode.INVALID_PASSWORD);
+        }
+
+        // 맞으면 해당 userId 레코드 delete처리
+        user.delete(userId);
+
+        // Redis auth cache → DELETED 처리 (즉시 차단 - AccessToken 지속시간 15분동안)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int currentVersion = (currentCache != null) ? currentCache.getAuthVersion() : 1;
+        String currentRole  = (currentCache != null) ? currentCache.getRole() : user.getRole().getAuthority();
+        userAuthCacheManager.saveWithTtl(userId,
+                new UserAuthCache("DELETED", currentRole, currentVersion, user.getUsername()), 15,TimeUnit.MINUTES);
+
+        // Refresh Token 삭제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
+
+        // 응답에 userId,username,deletedAt 담아서 반환
+        return new UserDeleteResponseDto(user.getUserId(), user.getUsername(), user.getDeletedAt());
+    }
+
+    /**
+     * 사용자 삭제 처리 (관리자 전용)
+     */
+    @Transactional
+    public UserDeleteResponseDto adminDeleteUser(long userId, long adminUserId) {
+        // 본인 userId 삭제하는 상황 방지 (용도 분리)
+        if (userId == adminUserId) {
+            throw new CustomException(ErrorCode.CANNOT_DELETE_SELF);
+        }
+
+        // 사용자 정보 추출
+        User user = userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
+        // 해당 유저가 MASTER면 예외처리
+        if (user.getRole() == UserEnumRole.MASTER) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        // 해당 userId 레코드 delete처리
+        user.delete(adminUserId);
+
+        // Redis auth cache → DELETED 처리 (즉시 차단)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int currentVersion = (currentCache != null) ? currentCache.getAuthVersion() : 1;
+        String currentRole  = (currentCache != null) ? currentCache.getRole() : user.getRole().getAuthority();
+        userAuthCacheManager.save(userId,
+                new UserAuthCache("DELETED", currentRole, currentVersion, user.getUsername()));
+
+        // Redis에 삭제한 사용자의 refresh token이 존재한다면 삭제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
+
+        // 응답에 userId,username,deletedAt 담아서 반환
+        return new UserDeleteResponseDto(user.getUserId(), user.getUsername(), user.getDeletedAt());
+    }
+
+    /**
+     * 사용자 권한 변경
+     */
+    @Transactional
+    public AdminUserUpdateRoleResponseDto adminUpdateRoleUser(long userId, long adminUserId, String role) {
+        // 본인이면 예외처리
+        if (userId == adminUserId) {
+            throw new CustomException(ErrorCode.CANNOT_UPDATE_ROLE_SELF);
+        }
+
+        // 유저 조회
+        User user =  userRepository.findById(userId).orElseThrow(
+                () -> new CustomException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        // 탈퇴 유저는 권한 변경 불가
+        if (user.isDeleted()) {
+            throw new CustomException(ErrorCode.WITHDRAWN_USER);
+        }
+
+        // 해당 유저가 MASTER면 예외처리
+        if (user.getRole() == UserEnumRole.MASTER) {
+            throw new CustomException(ErrorCode.FORBIDDEN);
+        }
+
+        // 사용자 권한 수정
+        user.updateRoleUser(UserEnumRole.of(role));
+        userRepository.flush();
+
+        // Redis auth cache 즉시 갱신 (authVersion 증가 → 기존 토큰 즉시 무효화)
+        UserAuthCache currentCache = userAuthCacheManager.get(userId);
+        int newAuthVersion = (currentCache != null) ? currentCache.getAuthVersion() + 1 : 1;
+        userAuthCacheManager.save(userId,
+                new UserAuthCache("ACTIVE", user.getRole().getAuthority(), newAuthVersion, user.getUsername()));
+
+        // Refresh Token 삭제 → 재로그인 강제
+        redisUtil.delete(RedisKeys.refreshKey(userId));
+
+        return new AdminUserUpdateRoleResponseDto(user.getUserId(), user.getUsername(), user.getRole().name(), user.getUpdatedAt());
+    }
+
+    /**
+     * 사용자 생성 - 관리자용
+     * ROLE은 CUSTOMER/OWNER/MANAGER만 설정 가능
+     */
+    @Transactional
+    public AdminSignupResponseDto adminSignup(AdminSignupRequestDto requestDto, long adminUserId) {
+
+        // 비밀번호 / 비밀번호 확인 일치 검사
+        if (!requestDto.getPassword().equals(requestDto.getPasswordConfirm())) {
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
+        }
+
+        // role 유효성 검사 (회원가입은 CUSTOMER / OWNER / MANAGER 만 허용)
+        UserEnumRole role = UserEnumRole.ofAdminSignup(requestDto.getRole());
+
+        // username 중복 검사 (삭제된 사용자 포함 - UNIQUE조건 정합성)
+        if (userRepository.existsByUsernameAll(requestDto.getUsername())) {
+            throw new CustomException(ErrorCode.DUPLICATE_USERNAME);
+        }
+
+        // email 중복 검사 (삭제된 사용자 포함 - UNIQUE조건 정합성)
+        if (userRepository.existsByEmailAll(requestDto.getEmail())) {
+            throw new CustomException(ErrorCode.DUPLICATE_EMAIL);
+        }
+
+        // 모두 통과시 비밀번호 암호화 후 엔티티 저장
+        User user = User.builder()
+                .username(requestDto.getUsername())
+                .password(passwordEncoder.encode(requestDto.getPassword()))
+                .email(requestDto.getEmail())
+                .nickname(requestDto.getNickname())
+                .role(role)
+                .build();
+
+        userRepository.save(user);
+
+        // save()후 PK(userId)가 생성되므로 그 값으로 createdBy 세팅
+        user.initCreatedBy(adminUserId);
+
+        log.info("[회원 생성 완료] userId={}, username={}", user.getUserId(), user.getUsername());
+        return new AdminSignupResponseDto(user);
     }
 }

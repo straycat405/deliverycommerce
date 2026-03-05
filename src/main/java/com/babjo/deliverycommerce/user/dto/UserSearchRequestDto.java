@@ -2,13 +2,15 @@ package com.babjo.deliverycommerce.user.dto;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Set;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserSearchRequestDto {
     private String username;
     private String nickname;
@@ -16,18 +18,14 @@ public class UserSearchRequestDto {
 
     @Min(0)
     private int page = 0;
-
+    @Builder.Default
     private int size = 10;
-
+    @Builder.Default
     private String sortBy = "createdAt";
-
+    @Builder.Default
     private boolean asc = true;
 
     private boolean includeDeleted = false;
-
-    public void setIsAsc(boolean asc) {
-        this.asc = asc;
-    }
 
     @AssertTrue(message = "페이지 크기는 10, 30, 50만 가능합니다.")
     public boolean isValidSize() {

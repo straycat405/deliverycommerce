@@ -112,7 +112,7 @@ public class UserController {
             summary = "로그아웃",
             description = """
                     - 사용자를 로그아웃 처리합니다.
-                    - AccessToken을 Redis에 블랙리스트로 등록 후,
+                    - 요청받은 AccessToken을 Redis에 블랙리스트로 등록 후, (재사용 불가, 재로그인 필요)
                     - 해당 userId의 Refresh Token을 Redis 메모리에서 삭제합니다.
                     """
     )
@@ -136,7 +136,7 @@ public class UserController {
         // Redis에 AccessToken 블랙리스트 등록
         redisUtil.set(RedisKeys.blacklistKey(token), "logout", duration, TimeUnit.MILLISECONDS);
         log.info("[Logout] 블랙리스트 등록 완료 - userId={}, 만료까지={}ms", userId, duration);
-        // Refresh Token 삭제
+        // Refresh Token Redis에서 삭제
         redisUtil.delete(RedisKeys.refreshKey(userId));
         // Refresh Token 쿠키 만료 (응답 쿠키 설정)
         // Http Cookie 설정

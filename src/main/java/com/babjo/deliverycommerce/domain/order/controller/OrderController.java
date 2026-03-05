@@ -1,9 +1,9 @@
-package com.babjo.deliverycommerce.order.controller;
+package com.babjo.deliverycommerce.domain.order.controller;
 
-import com.babjo.deliverycommerce.order.dto.OrderRequestDto;
-import com.babjo.deliverycommerce.order.dto.OrderResponseDto;
-import com.babjo.deliverycommerce.order.entity.OrderStatus;
-import com.babjo.deliverycommerce.order.service.OrderService;
+import com.babjo.deliverycommerce.domain.order.dto.OrderRequestDto;
+import com.babjo.deliverycommerce.domain.order.dto.OrderResponseDto;
+import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
+import com.babjo.deliverycommerce.domain.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.order.dto;
+package com.babjo.deliverycommerce.domain.order.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

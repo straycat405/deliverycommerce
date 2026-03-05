@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.order.entity;
+package com.babjo.deliverycommerce.domain.order.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import jakarta.persistence.*;

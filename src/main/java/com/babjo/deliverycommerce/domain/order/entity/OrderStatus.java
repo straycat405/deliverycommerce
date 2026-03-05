@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.order.entity;
+package com.babjo.deliverycommerce.domain.order.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,10 +15,4 @@ public enum OrderStatus {
     REJECTED("주문 거절");
 
      private final String description;
-
-    // 주문 취소 가능한 상태인지 확인
-    public boolean canCancel() {
-        return this == CREATED;
-    }
-
 }

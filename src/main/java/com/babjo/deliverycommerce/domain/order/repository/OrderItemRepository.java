@@ -1,7 +1,7 @@
-package com.babjo.deliverycommerce.order.repository;
+package com.babjo.deliverycommerce.domain.order.repository;
 
-import com.babjo.deliverycommerce.order.entity.Order;
-import com.babjo.deliverycommerce.order.entity.OrderItem;
+import com.babjo.deliverycommerce.domain.order.entity.Order;
+import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

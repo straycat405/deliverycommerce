@@ -1,6 +1,6 @@
-package com.babjo.deliverycommerce.order.dto;
+package com.babjo.deliverycommerce.domain.order.dto;
 
-import com.babjo.deliverycommerce.order.entity.OrderStatus;
+import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

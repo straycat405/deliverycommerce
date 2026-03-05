@@ -1,7 +1,6 @@
-package com.babjo.deliverycommerce.order.repository;
+package com.babjo.deliverycommerce.domain.order.repository;
 
-import com.babjo.deliverycommerce.order.entity.Order;
-import com.babjo.deliverycommerce.order.entity.OrderStatus;
+import com.babjo.deliverycommerce.domain.order.entity.Order;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

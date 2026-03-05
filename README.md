@@ -148,7 +148,18 @@ http://localhost:8080/swagger-ui/index.html
 - 권한 관리 (CUSTOMER / OWNER / MANAGER / MASTER)
 
 ### 🏪 가게 (Store)
+- 가게 등록 (OWNER)
+- 가게 목록 조회 (카테고리/이름 필터, 페이지 옵션)
+- 가게 상세 조회
+- 가게 정보 수정 (OWNER: 본인 가게만)
+- 가게 삭제 (Soft Delete)
 
+### 🛒 장바구니 (Cart / CartItem)
+- 내 장바구니 조회(USER)
+- 장바구니 비우기 (USER, Soft Delete 또는 전체 비움 처리)
+- 장바구니 상품 추가 (USER, 동일 상품 존재 시 수량 증가)
+- 장바구니 상품 수량 수정 (USER)
+- 장바구니 상품 삭제 (Soft Delete)
 
 ### 🍱 상품 (Product)
 

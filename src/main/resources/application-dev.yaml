@@ -11,6 +11,16 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+  # PostgreSQL 한글 정렬(Collation) 설정
+  # nickname 등 한글 필드의 ORDER BY 정렬을 위해 필요
+  # 최초 DB 생성시 한번만 실행
+  # 기존 docker 띄워둔 상태라면 docker compose down -v 후 재가동
+  sql:
+    init:
+      mode: always
+      schema-locations:
+        - classpath:db/init/01_create_collation.sql
+
 decorator:
   datasource:
     p6spy:

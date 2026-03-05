@@ -444,14 +444,35 @@ class ReviewControllerTest {
     // ───────────────────────────────────────────────
 
     @Test
-    void getReviews_전체조회_성공() throws Exception {
-        when(reviewService.getReviews(null, null)).thenReturn(Collections.emptyList());
+    void getReviews_CUSTOMER_파라미터없음_본인리뷰_반환() throws Exception {
+        // standaloneSetup에서 @AuthenticationPrincipal은 SecurityContext의 principal로 주입됨
+        ReviewResponse reviewResponse = ReviewResponse.builder()
+                .userId(1L)
+                .rating(4)
+                .content("맛있어요")
+                .build();
+
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(null), eq(null)))
+                .thenReturn(List.of(reviewResponse));
+
+        mockMvc.perform(get("/v1/reviews"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].userId").value(1));
+
+        verify(reviewService, times(1)).getReviews(any(UserPrincipal.class), eq(null), eq(null));
+    }
+
+    @Test
+    void getReviews_CUSTOMER_파라미터없음_빈목록_반환() throws Exception {
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(null), eq(null)))
+                .thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/v1/reviews"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(0)));
 
-        verify(reviewService, times(1)).getReviews(null, null);
+        verify(reviewService, times(1)).getReviews(any(UserPrincipal.class), eq(null), eq(null));
     }
 
     @Test
@@ -467,7 +488,8 @@ class ReviewControllerTest {
                 .content("맛있어요")
                 .build();
 
-        when(reviewService.getReviews(eq(reviewId), eq(null))).thenReturn(List.of(reviewResponse));
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(reviewId), eq(null)))
+                .thenReturn(List.of(reviewResponse));
 
         mockMvc.perform(get("/v1/reviews")
                         .param("reviewId", reviewId.toString()))
@@ -477,7 +499,31 @@ class ReviewControllerTest {
                 .andExpect(jsonPath("$.data[0].userId").value(1))
                 .andExpect(jsonPath("$.data[0].rating").value(5));
 
-        verify(reviewService, times(1)).getReviews(eq(reviewId), eq(null));
+        verify(reviewService, times(1)).getReviews(any(UserPrincipal.class), eq(reviewId), eq(null));
+    }
+
+    @Test
+    void getReviews_reviewId_타인_리뷰_조회_403_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(reviewId), eq(null)))
+                .thenThrow(new CustomException(ErrorCode.REVIEW_FORBIDDEN));
+
+        mockMvc.perform(get("/v1/reviews")
+                        .param("reviewId", reviewId.toString()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getReviews_reviewId_없는_리뷰_404_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(reviewId), eq(null)))
+                .thenThrow(new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+        mockMvc.perform(get("/v1/reviews")
+                        .param("reviewId", reviewId.toString()))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -493,7 +539,8 @@ class ReviewControllerTest {
                 .content("보통이에요")
                 .build();
 
-        when(reviewService.getReviews(null, storeId)).thenReturn(List.of(reviewResponse));
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(null), eq(storeId)))
+                .thenReturn(List.of(reviewResponse));
 
         mockMvc.perform(get("/v1/reviews")
                         .param("storeId", storeId.toString()))
@@ -504,20 +551,22 @@ class ReviewControllerTest {
                 .andExpect(jsonPath("$.data[0].rating").value(3))
                 .andExpect(jsonPath("$.data[0].content").value("보통이에요"));
 
-        verify(reviewService, times(1)).getReviews(null, storeId);
+        verify(reviewService, times(1)).getReviews(any(UserPrincipal.class), eq(null), eq(storeId));
     }
 
     @Test
     void getReviews_storeId_필터_결과없음_빈목록_반환() throws Exception {
         UUID storeId = UUID.randomUUID();
 
-        when(reviewService.getReviews(null, storeId)).thenReturn(Collections.emptyList());
+        when(reviewService.getReviews(any(UserPrincipal.class), eq(null), eq(storeId)))
+                .thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/v1/reviews")
                         .param("storeId", storeId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(0)));
     }
+
 
     // ───────────────────────────────────────────────
     // DELETE /v1/reviews/{reviewId} - 리뷰 삭제

@@ -159,8 +159,8 @@ class ReviewServiceTest {
     // ───────────────────────────────────────────────
 
     @Test
-    void getReviews_reviewId_단건조회_성공() {
-        // given
+    void getReviews_CUSTOMER_본인_리뷰_단건조회_성공() {
+        // given — review 작성자 userId=1L, principal userId=1L (본인)
         UUID reviewId = UUID.randomUUID();
         ReviewResponse expectedResponse = ReviewResponse.builder()
                 .reviewId(reviewId)
@@ -173,7 +173,7 @@ class ReviewServiceTest {
         given(reviewMapper.toResponse(review)).willReturn(expectedResponse);
 
         // when
-        List<ReviewResponse> result = reviewService.getReviews(reviewId, null);
+        List<ReviewResponse> result = reviewService.getReviews(principal, reviewId, null);
 
         // then
         assertThat(result).hasSize(1);
@@ -185,21 +185,56 @@ class ReviewServiceTest {
     }
 
     @Test
-    void getReviews_reviewId_단건조회_실패_존재하지_않는_리뷰() {
+    void getReviews_CUSTOMER_타인_리뷰_단건조회_실패() {
+        // given — review 작성자 userId=1L, otherPrincipal userId=2L (타인)
+        UUID reviewId = UUID.randomUUID();
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.getReviews(otherPrincipal, reviewId, null))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REVIEW_FORBIDDEN));
+    }
+
+    @Test
+    void getReviews_MANAGER_타인_리뷰_단건조회_성공() {
+        // given — MANAGER는 타인 리뷰도 조회 가능
+        UUID reviewId = UUID.randomUUID();
+        ReviewResponse expectedResponse = ReviewResponse.builder()
+                .reviewId(reviewId)
+                .userId(1L)
+                .rating(4)
+                .content("맛있어요")
+                .build();
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        given(reviewMapper.toResponse(review)).willReturn(expectedResponse);
+
+        // when
+        List<ReviewResponse> result = reviewService.getReviews(managerPrincipal, reviewId, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUserId()).isEqualTo(1L);
+    }
+
+    @Test
+    void getReviews_단건조회_실패_존재하지_않는_리뷰() {
         // given
         UUID reviewId = UUID.randomUUID();
         given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> reviewService.getReviews(reviewId, null))
+        assertThatThrownBy(() -> reviewService.getReviews(principal, reviewId, null))
                 .isInstanceOf(CustomException.class)
                 .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
                         .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
     }
 
     @Test
-    void getReviews_storeId_필터_목록조회_성공() {
-        // given
+    void getReviews_storeId_필터_목록조회_성공_CUSTOMER() {
+        // given — storeId 조회는 CUSTOMER도 모든 리뷰 조회 가능 (공개 정보)
         UUID storeId = UUID.randomUUID();
         ReviewResponse reviewResponse = ReviewResponse.builder()
                 .storeId(storeId)
@@ -212,13 +247,14 @@ class ReviewServiceTest {
         given(reviewMapper.toResponse(review)).willReturn(reviewResponse);
 
         // when
-        List<ReviewResponse> result = reviewService.getReviews(null, storeId);
+        List<ReviewResponse> result = reviewService.getReviews(principal, null, storeId);
 
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getStoreId()).isEqualTo(storeId);
         verify(reviewRepository, times(1)).findAllByStore_StoreId(storeId);
         verify(reviewRepository, never()).findAll();
+        verify(reviewRepository, never()).findByUser_userId(any());
     }
 
     @Test
@@ -228,15 +264,53 @@ class ReviewServiceTest {
         given(reviewRepository.findAllByStore_StoreId(storeId)).willReturn(List.of());
 
         // when
-        List<ReviewResponse> result = reviewService.getReviews(null, storeId);
+        List<ReviewResponse> result = reviewService.getReviews(principal, null, storeId);
 
         // then
         assertThat(result).isEmpty();
     }
 
     @Test
-    void getReviews_전체조회_성공() {
+    void getReviews_파라미터없음_CUSTOMER_본인_리뷰만_반환() {
+        // given — CUSTOMER는 본인 작성 리뷰만 반환
+        ReviewResponse reviewResponse = ReviewResponse.builder()
+                .userId(1L)
+                .rating(4)
+                .content("맛있어요")
+                .build();
+
+        given(reviewRepository.findByUser_userId(1L)).willReturn(List.of(review));
+        given(reviewMapper.toResponse(review)).willReturn(reviewResponse);
+
+        // when
+        List<ReviewResponse> result = reviewService.getReviews(principal, null, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUserId()).isEqualTo(1L);
+        verify(reviewRepository, times(1)).findByUser_userId(1L);
+        verify(reviewRepository, never()).findAll();
+        verify(reviewRepository, never()).findByReviewId(any());
+        verify(reviewRepository, never()).findAllByStore_StoreId(any());
+    }
+
+    @Test
+    void getReviews_파라미터없음_CUSTOMER_본인_리뷰_없으면_빈목록() {
         // given
+        given(reviewRepository.findByUser_userId(1L)).willReturn(List.of());
+
+        // when
+        List<ReviewResponse> result = reviewService.getReviews(principal, null, null);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(reviewRepository, times(1)).findByUser_userId(1L);
+        verify(reviewRepository, never()).findAll();
+    }
+
+    @Test
+    void getReviews_파라미터없음_MANAGER_전체_리뷰_반환() {
+        // given — MANAGER는 전체 리뷰 조회 가능
         ReviewResponse reviewResponse = ReviewResponse.builder()
                 .userId(1L)
                 .rating(4)
@@ -247,26 +321,27 @@ class ReviewServiceTest {
         given(reviewMapper.toResponse(review)).willReturn(reviewResponse);
 
         // when
-        List<ReviewResponse> result = reviewService.getReviews(null, null);
+        List<ReviewResponse> result = reviewService.getReviews(managerPrincipal, null, null);
 
         // then
         assertThat(result).hasSize(1);
         verify(reviewRepository, times(1)).findAll();
+        verify(reviewRepository, never()).findByUser_userId(any());
     }
 
     @Test
-    void getReviews_파라미터_없음_전체조회_실행() {
-        // given
+    void getReviews_파라미터없음_MASTER_전체_리뷰_반환() {
+        // given — MASTER도 전체 리뷰 조회 가능
+        UserPrincipal masterPrincipal = new UserPrincipal(4L, "master", "MASTER");
         given(reviewRepository.findAll()).willReturn(List.of());
 
         // when
-        List<ReviewResponse> result = reviewService.getReviews(null, null);
+        List<ReviewResponse> result = reviewService.getReviews(masterPrincipal, null, null);
 
         // then
         assertThat(result).isEmpty();
         verify(reviewRepository, times(1)).findAll();
-        verify(reviewRepository, never()).findByReviewId(any());
-        verify(reviewRepository, never()).findAllByStore_StoreId(any());
+        verify(reviewRepository, never()).findByUser_userId(any());
     }
 
     // ───────────────────────────────────────────────

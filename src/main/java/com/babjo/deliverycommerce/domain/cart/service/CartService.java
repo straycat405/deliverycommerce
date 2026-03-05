@@ -65,6 +65,8 @@ public class CartService {
 
         validateCartOwner(cart, userId);
 
+        cartItem.updateQuantity(quantity);
+
         log.info("장바구니 수량 수정 완료: userId={}, cartId={}, cartItemId={}, updateQuantity={}", userId, cart.getUserId(), cartItemId, quantity);
 
         return buildCartResponse(cart);

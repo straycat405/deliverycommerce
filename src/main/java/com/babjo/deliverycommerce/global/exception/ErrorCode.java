@@ -56,6 +56,10 @@ public enum ErrorCode {
     // ── Store / Product / Order / Payment / Review ────
     // 각 도메인 담당자가 PR로 추가
 
+    // ── Product  ──────────────────────────────────────────
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
+    PRODUCT_DELETED(HttpStatus.GONE, "PRODUCT_DELETED", "삭제된 상품입니다."),
+  
     // ── Store ─────────────────────────────────────────
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
     STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다.");

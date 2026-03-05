@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.domain.cart.repository;
 import com.babjo.deliverycommerce.domain.cart.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,4 +18,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, UUID> {
 
     /*장바구니에 남은 항목 있는지 확인용*/
     boolean existsCartIdAndDeletedAtIsNull(UUID cartId);
+
+    boolean existsByCartIdAndDeletedAtIsNull(UUID cartId);
 }

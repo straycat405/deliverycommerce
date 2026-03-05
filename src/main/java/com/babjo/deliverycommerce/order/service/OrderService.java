@@ -4,6 +4,7 @@ import com.babjo.deliverycommerce.order.dto.OrderRequestDto;
 import com.babjo.deliverycommerce.order.dto.OrderResponseDto;
 import com.babjo.deliverycommerce.order.entity.Order;
 import com.babjo.deliverycommerce.order.entity.OrderItem;
+import com.babjo.deliverycommerce.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -93,6 +94,19 @@ public class OrderService {
             return convertToResponseDto(order);
     }
 
+    @Transactional
+    public OrderResponseDto updateOrderStatus(UUID orderId,Long ownerId, OrderStatus status){
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+        switch (status){
+            case PREPARING -> order.startPreparing(ownerId);
+            case PICKUP_READY -> order.readyPickup(ownerId);
+            case PICKED_UP -> order.completePickup(ownerId);
+            default -> throw new IllegalArgumentException("잘못된 상태 요청 입니다.");
+        }
+        return convertToResponseDto(order);
+    }
+
     private OrderResponseDto convertToResponseDto(Order order){
         List<OrderResponseDto.OrderItemResponse> itemResponses = order.getOrderItems().stream()
                 .map(item -> OrderResponseDto.OrderItemResponse.builder()
@@ -119,6 +133,9 @@ public class OrderService {
                 .cookingMinutes(order.getCookingMinutes())
                 .acceptedBy(order.getAcceptedBy())
                 .acceptedAt(order.getAcceptedAt())
+                .preparingStartedBy(order.getPreparingStartedBy())
+                .pickupReadieBy(order.getPickupReadieBy())
+                .pickupBy(order.getPickupBy())
                 .build();
     }
 

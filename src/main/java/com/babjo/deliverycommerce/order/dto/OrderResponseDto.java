@@ -22,12 +22,16 @@ public class OrderResponseDto {
     private String message;
     private List<OrderItemResponse> orderItems;
     private LocalDateTime createdAt;
-    private Integer cookingMinutes;
-    private Long acceptedBy;
-    private LocalDateTime acceptedAt;
     private LocalDateTime canceledAt;
     private Long canceledBy;
     private String cancelReason;
+    private Long acceptedBy;
+    private Integer cookingMinutes;
+    private Long preparingStartedBy;
+    private Long pickupReadieBy;
+    private Long pickupBy;
+    private LocalDateTime acceptedAt;
+
 
     @Getter
     @Builder

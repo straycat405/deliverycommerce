@@ -2,6 +2,7 @@ package com.babjo.deliverycommerce.order.controller;
 
 import com.babjo.deliverycommerce.order.dto.OrderRequestDto;
 import com.babjo.deliverycommerce.order.dto.OrderResponseDto;
+import com.babjo.deliverycommerce.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.order.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -77,6 +77,34 @@ public class OrderController {
     ){
         OrderResponseDto response = orderService.acceptOrder(orderId, ownerId, request);
         return ResponseEntity.ok(response);
+    }
+
+    // 조리 시작
+    @PatchMapping("/{orderId}/preparing")
+    public ResponseEntity<OrderResponseDto> startPreparing(
+            @PathVariable UUID orderId,
+            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
+            @RequestHeader(name = "OwnerId") Long ownerId
+    ){
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PREPARING));
+    }
+
+    // 조리 완료 및 픽업 대기
+    @PatchMapping("/{orderId}/pickup-ready")
+    public ResponseEntity<OrderResponseDto> readyPickup(
+            @PathVariable UUID orderId,
+            @RequestHeader(name = "OwnerId") Long ownerId
+    ){
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PICKUP_READY));
+    }
+
+    // 픽업 완료
+    @PatchMapping("/{orderId}/pickup")
+    public ResponseEntity<OrderResponseDto> completePickup(
+            @PathVariable UUID orderId,
+            @RequestHeader(name = "OwnerId") Long ownerId
+    ){
+        return ResponseEntity.ok(orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PICKED_UP));
     }
 
 }

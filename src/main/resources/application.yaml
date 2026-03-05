@@ -18,5 +18,10 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: 3600000
-  refresh-expiration: 604800000
+  access-expiration: 3600000 # 1H
+  refresh-expiration: 604800000 # 7D
+
+# Google Ai
+google:
+  ai:
+    api-key: ${GOOGLE_API_KEY}

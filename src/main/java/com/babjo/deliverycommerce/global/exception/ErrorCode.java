@@ -56,7 +56,7 @@ public enum ErrorCode {
 
     // ── Product  ──────────────────────────────────────────
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
-    PRODUCT_DELETED(HttpStatus.GONE, "PRODUCT_DELETED", "삭제된 상품입니다.");
+    PRODUCT_DELETED(HttpStatus.GONE, "PRODUCT_DELETED", "삭제된 상품입니다."),
   
     // ── Store ─────────────────────────────────────────
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),

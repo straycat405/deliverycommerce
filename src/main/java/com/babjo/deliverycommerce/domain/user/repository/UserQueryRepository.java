@@ -1,14 +1,13 @@
-package com.babjo.deliverycommerce.user.repository;
+package com.babjo.deliverycommerce.domain.user.repository;
 
+import com.babjo.deliverycommerce.domain.user.entity.QUser;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
-import com.babjo.deliverycommerce.user.entity.QUser;
-import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

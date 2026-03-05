@@ -1,5 +1,6 @@
-package com.babjo.deliverycommerce.user.service;
+package com.babjo.deliverycommerce.domain.user.service;
 
+import com.babjo.deliverycommerce.domain.user.dto.*;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
@@ -8,10 +9,10 @@ import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.global.redis.UserAuthCache;
 import com.babjo.deliverycommerce.global.redis.UserAuthCacheManager;
-import com.babjo.deliverycommerce.user.dto.*;
-import com.babjo.deliverycommerce.user.entity.User;
-import com.babjo.deliverycommerce.user.repository.UserQueryRepository;
-import com.babjo.deliverycommerce.user.repository.UserRepository;
+import com.babjo.deliverycommerce.domain.user.dto.*;
+import com.babjo.deliverycommerce.domain.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.repository.UserQueryRepository;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

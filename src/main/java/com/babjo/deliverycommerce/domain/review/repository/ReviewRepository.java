@@ -18,6 +18,8 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     List<Review> findAllByStore_StoreId(UUID storeId);
 
+    List<Review> findByUser_userId(Long userId);
+
     // 관리자용 - 삭제된 리뷰 포함 조회 (Native Query로 @Where 우회)
     @Query(value = "SELECT * FROM p_review WHERE review_id = :id", nativeQuery = true)
     Optional<Review> findByIdForAdmin(@Param("id") UUID id);

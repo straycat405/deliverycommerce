@@ -40,8 +40,9 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    public static Review create(Store store, Integer rating, String content) {
+    public static Review create(User user, Store store, Integer rating, String content) {
         Review review = new Review();
+        review.user = user;
         review.store = store;
         review.rating = rating;
         review.content = content;

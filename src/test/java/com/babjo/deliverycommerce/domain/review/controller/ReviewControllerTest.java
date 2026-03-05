@@ -4,6 +4,9 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.service.ReviewService;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
+import com.babjo.deliverycommerce.global.exception.GlobalExceptionHandler;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +47,9 @@ class ReviewControllerTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(reviewController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(reviewController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
 
         customerPrincipal = new UserPrincipal(1L, "testuser", "CUSTOMER");
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -66,6 +71,7 @@ class ReviewControllerTest {
 
         ReviewCreateResponse response = new ReviewCreateResponse();
         response.setReviewId(reviewId);
+        response.setUserId(1L);
         response.setOrderId(orderId);
         response.setStoreId(storeId);
         response.setRating(4);
@@ -88,6 +94,7 @@ class ReviewControllerTest {
                         .content(requestBody))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data.userId").value(1))
                 .andExpect(jsonPath("$.data.orderId").value(orderId.toString()))
                 .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
                 .andExpect(jsonPath("$.data.rating").value(4))
@@ -104,6 +111,7 @@ class ReviewControllerTest {
 
         ReviewCreateResponse response = new ReviewCreateResponse();
         response.setReviewId(reviewId);
+        response.setUserId(1L);
         response.setStoreId(storeId);
         response.setRating(1);
         response.setContent("별로에요");
@@ -135,6 +143,7 @@ class ReviewControllerTest {
 
         ReviewCreateResponse response = new ReviewCreateResponse();
         response.setReviewId(reviewId);
+        response.setUserId(1L);
         response.setStoreId(storeId);
         response.setRating(5);
         response.setContent("최고에요");
@@ -255,6 +264,29 @@ class ReviewControllerTest {
         verify(reviewService, never()).createReview(any(), any());
     }
 
+    @Test
+    void createReview_실패_유저없음_예외전파() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        when(reviewService.createReview(any(UserPrincipal.class), any()))
+                .thenThrow(new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  4,
+                  "content": "맛있어요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+    }
+
     // ───────────────────────────────────────────────
     // PUT /v1/reviews/{reviewId} - 리뷰 수정
     // ───────────────────────────────────────────────
@@ -312,9 +344,28 @@ class ReviewControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
                 .andExpect(jsonPath("$.data.rating").value(5))
                 .andExpect(jsonPath("$.data.content").value("정말 최고에요"));
+    }
+
+    @Test
+    void updateReview_실패_작성자_불일치_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any()))
+                .thenThrow(new CustomException(ErrorCode.REVIEW_FORBIDDEN));
+
+        String requestBody = """
+                {
+                  "rating":  5,
+                  "content": "정말 맛있어요"
+                }
+                """;
+
+        mockMvc.perform(put("/v1/reviews/" + reviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isForbidden());
 
         verify(reviewService, times(1)).updateReview(any(UserPrincipal.class), eq(reviewId), any());
     }
@@ -410,6 +461,7 @@ class ReviewControllerTest {
 
         ReviewResponse reviewResponse = ReviewResponse.builder()
                 .reviewId(reviewId)
+                .userId(1L)
                 .storeId(storeId)
                 .rating(5)
                 .content("맛있어요")
@@ -422,6 +474,7 @@ class ReviewControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].reviewId").value(reviewId.toString()))
+                .andExpect(jsonPath("$.data[0].userId").value(1))
                 .andExpect(jsonPath("$.data[0].rating").value(5));
 
         verify(reviewService, times(1)).getReviews(eq(reviewId), eq(null));
@@ -434,6 +487,7 @@ class ReviewControllerTest {
 
         ReviewResponse reviewResponse = ReviewResponse.builder()
                 .reviewId(reviewId)
+                .userId(1L)
                 .storeId(storeId)
                 .rating(3)
                 .content("보통이에요")
@@ -446,6 +500,7 @@ class ReviewControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data[0].userId").value(1))
                 .andExpect(jsonPath("$.data[0].rating").value(3))
                 .andExpect(jsonPath("$.data[0].content").value("보통이에요"));
 
@@ -477,6 +532,19 @@ class ReviewControllerTest {
         mockMvc.perform(delete("/v1/reviews/" + reviewId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("리뷰 삭제 성공"));
+
+        verify(reviewService, times(1)).deleteReview(eq(reviewId), any(UserPrincipal.class));
+    }
+
+    @Test
+    void deleteReview_실패_작성자_불일치_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        doThrow(new CustomException(ErrorCode.REVIEW_FORBIDDEN))
+                .when(reviewService).deleteReview(eq(reviewId), any(UserPrincipal.class));
+
+        mockMvc.perform(delete("/v1/reviews/" + reviewId))
+                .andExpect(status().isForbidden());
 
         verify(reviewService, times(1)).deleteReview(eq(reviewId), any(UserPrincipal.class));
     }

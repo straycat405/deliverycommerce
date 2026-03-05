@@ -41,6 +41,7 @@ public class ReviewController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'MASTER')")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviews(
             @RequestParam(required = false) UUID reviewId,
             @RequestParam(required = false) UUID storeId

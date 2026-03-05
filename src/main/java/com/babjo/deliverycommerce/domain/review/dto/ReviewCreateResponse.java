@@ -12,6 +12,7 @@ import java.util.UUID;
 @NoArgsConstructor
 public class ReviewCreateResponse {
     private UUID reviewId;
+    private Long userId;
     private UUID orderId;
     private UUID storeId;
     private Integer rating;

@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
+import com.babjo.deliverycommerce.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +17,15 @@ class ReviewMapperTest {
 
     private ReviewMapper reviewMapper;
     private Store store;
+    private User user;
     private Review review;
 
     @BeforeEach
     void setUp() {
         reviewMapper = new ReviewMapper();
         store = Store.create(1L, "한식", "테스트 식당", "서울시 강남구");
-        review = Review.create(store, 4, "맛있어요");
+        user = User.createForTest(1L, "testuser", "test@test.com", "테스터", UserEnumRole.CUSTOMER);
+        review = Review.create(user, store, 4, "맛있어요");
     }
 
     // ───────────────────────────────────────────────
@@ -35,6 +39,7 @@ class ReviewMapperTest {
 
         // then
         assertThat(response.getReviewId()).isEqualTo(review.getReviewId());
+        assertThat(response.getUserId()).isEqualTo(user.getUserId());
         assertThat(response.getStoreId()).isEqualTo(store.getStoreId());
         assertThat(response.getRating()).isEqualTo(4);
         assertThat(response.getContent()).isEqualTo("맛있어요");
@@ -49,6 +54,7 @@ class ReviewMapperTest {
         // 필드 자체가 response에 존재하는지 확인 (NPE 없이 접근 가능)
         assertThat(response).isNotNull();
         assertThat(response.getStoreId()).isEqualTo(store.getStoreId());
+        assertThat(response.getUserId()).isEqualTo(user.getUserId());
     }
 
     // ───────────────────────────────────────────────
@@ -61,24 +67,26 @@ class ReviewMapperTest {
         ReviewCreateRequest request = new ReviewCreateRequest();
 
         // when
-        Review entity = reviewMapper.toEntity(request, store);
+        Review entity = reviewMapper.toEntity(request, user, store);
 
         // then
         assertThat(entity).isNotNull();
+        assertThat(entity.getUser()).isEqualTo(user);
         assertThat(entity.getStore()).isEqualTo(store);
         assertThat(entity.getRating()).isEqualTo(request.getRating());
         assertThat(entity.getContent()).isEqualTo(request.getContent());
     }
 
     @Test
-    void toEntity_store가_올바르게_설정됨() {
+    void toEntity_user와_store가_올바르게_설정됨() {
         // given
         ReviewCreateRequest request = new ReviewCreateRequest();
 
         // when
-        Review entity = reviewMapper.toEntity(request, store);
+        Review entity = reviewMapper.toEntity(request, user, store);
 
         // then
+        assertThat(entity.getUser().getUserId()).isEqualTo(1L);
         assertThat(entity.getStore().getStoreId()).isEqualTo(store.getStoreId());
         assertThat(entity.getStore().getName()).isEqualTo("테스트 식당");
     }
@@ -94,6 +102,7 @@ class ReviewMapperTest {
 
         // then
         assertThat(response.getReviewId()).isEqualTo(review.getReviewId());
+        assertThat(response.getUserId()).isEqualTo(user.getUserId());
         assertThat(response.getStoreId()).isEqualTo(store.getStoreId());
         assertThat(response.getRating()).isEqualTo(4);
         assertThat(response.getContent()).isEqualTo("맛있어요");

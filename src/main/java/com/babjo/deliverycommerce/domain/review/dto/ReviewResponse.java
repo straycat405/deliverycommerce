@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public class ReviewResponse {
     private UUID reviewId;
+    private Long userId;
     private UUID orderId;
     private UUID storeId;
     private Integer rating;

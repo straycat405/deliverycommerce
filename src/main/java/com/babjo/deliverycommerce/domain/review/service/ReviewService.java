@@ -13,6 +13,8 @@ import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
+import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,6 @@ import java.util.stream.Collectors;
 // import com.babjo.deliverycommerce.domain.order.entity.Order;
 // import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 // import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
-// import com.babjo.deliverycommerce.user.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
 public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final StoreRepository storeRepository;
-//    private final UserRepository userRepository;
+    private final UserRepository userRepository;
 //    private final OrderRepository orderRepository;
     private final ReviewMapper reviewMapper;
 
@@ -41,8 +42,8 @@ public class ReviewService {
             UserPrincipal principal,
             ReviewCreateRequest createRequest
     ) {
-//        User user = userRepository.findById(principal.getUserId())
-//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 //        Order order = orderRepository.findById(createRequest.getOrderId())
 //                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
@@ -64,7 +65,7 @@ public class ReviewService {
 
         Review review = reviewMapper.toEntity(
                 createRequest,
-//                user,
+                user,
 //                order,
                 store
         );
@@ -77,8 +78,6 @@ public class ReviewService {
     }
 
     public List<ReviewResponse> getReviews(UUID reviewId, UUID storeId) {
-        // [TODO] 인증 연결 후 userId 기반 필터 추가
-
         // reviewId가 있으면 단건 조회 (List 형태로 반환)
         if (reviewId != null) {
             Review review = reviewRepository.findByReviewId(reviewId)
@@ -95,6 +94,7 @@ public class ReviewService {
         }
 
         // 전체 목록 조회
+        // [TODO] 인증 연결 후 principal 기반 필터 추가 (현재는 전체 조회)
         return reviewRepository.findAll()
                 .stream()
                 .map(reviewMapper::toResponse)
@@ -103,13 +103,15 @@ public class ReviewService {
 
     @Transactional
     public void deleteReview(UUID reviewId, UserPrincipal principal) {
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByReviewId(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-        // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getUserId().equals(principal.getUserId())) {
-        //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
-        // }
+        // 작성자 또는 MANAGER/MASTER만 삭제 가능
+        if (!review.getUser().getUserId().equals(principal.getUserId())
+                && !principal.getRole().equals("MANAGER")
+                && !principal.getRole().equals("MASTER")) {
+            throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
+        }
 
         Store store = review.getStore();
         store.removeReview(review.getRating());
@@ -126,13 +128,15 @@ public class ReviewService {
             ReviewUpdateRequest updateRequest
     ) {
         // 실패조건: 존재하지 않는 리뷰
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByReviewId(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-        // [TODO] 작성자 확인 (실패조건: 작성자 불일치) - 인증 연결 후 주석 해제
-        // if (!review.getUser().getUserId().equals(principal.getUserId())) {
-        //     throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
-        // }
+        // 작성자 또는 MANAGER/MASTER만 수정 가능
+        if (!review.getUser().getUserId().equals(principal.getUserId())
+                && !principal.getRole().equals("MANAGER")
+                && !principal.getRole().equals("MASTER")) {
+            throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
+        }
 
         int oldRating = review.getRating();
 

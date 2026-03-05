@@ -6,6 +6,7 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.user.entity.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,6 +15,7 @@ public class ReviewMapper {
     public ReviewResponse toResponse(Review review) {
         return ReviewResponse.builder()
                 .reviewId(review.getReviewId())
+                .userId(review.getUser().getUserId())
                 // [TODO] Order 연결 후 주석 해제
                 // .orderId(review.getOrder().getOrderId())
                 .storeId(review.getStore().getStoreId())
@@ -26,12 +28,12 @@ public class ReviewMapper {
 
     public Review toEntity(
             ReviewCreateRequest createRequest,
-//            User user,
+            User user,
 //            Order order,
             Store store
     ) {
         return Review.create(
-//                user,
+                user,
 //                order,
                 store,
                 createRequest.getRating(),
@@ -42,6 +44,7 @@ public class ReviewMapper {
     public ReviewCreateResponse toCreateResponse(Review review) {
         ReviewCreateResponse response = new ReviewCreateResponse();
         response.setReviewId(review.getReviewId());
+        response.setUserId(review.getUser().getUserId());
         // [TODO] Order 연결 후 주석 해제
         // response.setOrderId(review.getOrder().getOrderId());
         response.setStoreId(review.getStore().getStoreId());

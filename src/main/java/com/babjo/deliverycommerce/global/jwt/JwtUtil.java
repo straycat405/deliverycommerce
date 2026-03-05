@@ -105,14 +105,6 @@ public class JwtUtil {
     }
 
     /**
-     * 유효성 검사 — 재발급 등 별도 분기 필요 시 사용
-     */
-    public boolean validateToken(String token) {
-        parseToken(token); // 예외 안 나면 유효한 것
-        return true;
-    }
-
-    /**
      * Access Token 남은 만료시간 반환 (ms)
      */
     public long getRemainExpiration(String token) {

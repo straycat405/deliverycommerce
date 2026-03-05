@@ -1,25 +1,4 @@
-# ===========================
-# Java
-# ===========================
-*.class
-*.jar
-*.war
-*.ear
-*.nar
-hs_err_pid*
-
-# ===========================
-# Gradle
-# ===========================
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# ===========================
 # IntelliJ IDEA
-# ===========================
 .idea/
 *.iws
 *.iml
@@ -28,44 +7,33 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
-# ===========================
-# Spring Boot
-# ===========================
-HELP.md
-/build/
+# Gradle
+.gradle/
+build/
 
-# ===========================
-# 환경변수
-# ===========================
+# Spring / env
+docs/HELP.md
 .env
 *.env
 application-local.yml
+application-local.yaml
 application-secret.yml
+application-secret.yaml
 
-# ===========================
-# QueryDSL 생성 파일
-# ===========================
+# QueryDSL
+/build/generated/
 /build/generated/querydsl/
 
-# ===========================
-# Mac OS
-# ===========================
+# OS
 .DS_Store
-
-# ===========================
-# Windows
-# ===========================
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# ===========================
 # Logs
-# ===========================
 *.log
 logs/
 
-# ===========================
-# Etc
-# ===========================
-CLAUDE.md
+# Docs / local
+docs/
+dump.rdb

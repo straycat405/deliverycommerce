@@ -1,6 +1,7 @@
 package com.babjo.deliverycommerce.user.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -71,12 +72,45 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true , length = 255)
     private String email;
 
-    @Column(nullable = false , length = 50)
+    @Column(nullable = false)
     private String nickname;
 
     @Column(nullable = false , length = 20)
     @Enumerated(value = EnumType.STRING)
     private UserEnumRole role;
 
+    // 사용자 정보 수정
+    public void updateUser (String username, String password, String email, String nickname) {
+        if (username != null) this.username = username; // null이면 건너뜀
+        if (password != null) this.password = password; // null이면 건너뜀
+        if (email != null) this.email = email; // null이면 건너뜀
+        if (nickname != null) this.nickname = nickname; // null이면 건너뜀
+    }
+
+    // 사용자 권한 수정
+    public void updateRoleUser (UserEnumRole role) {
+        if (role != null) this.role = role;
+    }
+
+    // 테스트용 목업
+    public static User createForTest(Long userId, String username, String email,
+                                     String nickname, UserEnumRole role) {
+        User user = User.builder()
+                .username(username)
+                .password("encoded")
+                .email(email)
+                .nickname(nickname)
+                .role(role)
+                .build();
+        // 리플렉션으로 userId 주입
+        try {
+            var field = User.class.getDeclaredField("userId");
+            field.setAccessible(true);
+            field.set(user, userId);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return user;
+    }
 
 }

@@ -1,14 +1,16 @@
 package com.babjo.deliverycommerce.domain.cart.controller;
 
 
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
 import com.babjo.deliverycommerce.domain.cart.service.CartService;
 import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -32,6 +34,22 @@ public class CartController {
         CartResponseDto response = cartService.getMyCart(userId);
 
         log.info("내 장바구니 조회 API 완료: userId={}, cartId={}, itemCount={}", userId, response.getCartId(), response.getItems().size());
+
+        return response;
+    }
+
+    @PatchMapping("/items/{cartItemId}")
+    public CartResponseDto updateQuantity(@PathVariable UUID cartItemId,
+                                          @Valid @RequestBody CartItemQuantityUpdateRequestDto request,
+                                          Authentication authentication) {
+
+        Long userId = currentUserResolver.getUserId(authentication);
+
+        log.info("장바구니 수량 수정 API 요청: userId={},cartItemId={},quantity={}", userId, cartItemId, request.getQuantity());
+
+        CartResponseDto response = cartService.updateQuantity(userId, cartItemId, request);
+
+        log.info("장바구니 수량 수정 API 완료: userId={}, cartId={}, itemCount={}", userId, response.getCartId(), response.getItems().size());
 
         return response;
     }

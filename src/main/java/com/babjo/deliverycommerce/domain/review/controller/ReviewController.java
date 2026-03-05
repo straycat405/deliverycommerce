@@ -43,10 +43,11 @@ public class ReviewController {
     @GetMapping
     @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'MASTER')")
     public ResponseEntity<ApiResponse<List<ReviewResponse>>> getReviews(
+            @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) UUID reviewId,
             @RequestParam(required = false) UUID storeId
     ) {
-        return ApiResponse.ok("리뷰 조회 성공", reviewService.getReviews(reviewId, storeId));
+        return ApiResponse.ok("리뷰 조회 성공", reviewService.getReviews(principal, reviewId, storeId));
     }
 
     @DeleteMapping("/{reviewId}")

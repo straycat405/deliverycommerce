@@ -77,15 +77,21 @@ public class ReviewService {
         return reviewMapper.toCreateResponse(savedReview);
     }
 
-    public List<ReviewResponse> getReviews(UUID reviewId, UUID storeId) {
-        // reviewId가 있으면 단건 조회 (List 형태로 반환)
+    public List<ReviewResponse> getReviews(UserPrincipal principal, UUID reviewId, UUID storeId) {
+        // reviewId 단건 조회 — 본인 리뷰이거나 MANAGER/MASTER만 접근 가능
         if (reviewId != null) {
             Review review = reviewRepository.findByReviewId(reviewId)
                     .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+            boolean isAdminRole = principal.getRole().equals("MANAGER") || principal.getRole().equals("MASTER");
+            if (!isAdminRole && !review.getUser().getUserId().equals(principal.getUserId())) {
+                throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
+            }
+
             return List.of(reviewMapper.toResponse(review));
         }
 
-        // storeId 필터 목록 조회 - 가게별 리뷰 목록
+        // storeId 필터 조회 — 해당 가게의 리뷰 목록 (전체 공개)
         if (storeId != null) {
             return reviewRepository.findAllByStore_StoreId(storeId)
                     .stream()
@@ -93,9 +99,18 @@ public class ReviewService {
                     .collect(Collectors.toList());
         }
 
-        // 전체 목록 조회
-        // [TODO] 인증 연결 후 principal 기반 필터 추가 (현재는 전체 조회)
-        return reviewRepository.findAll()
+        // 파라미터 없는 전체 조회
+        // CUSTOMER: 본인이 작성한 리뷰만 반환
+        // MANAGER / MASTER: 전체 리뷰 반환
+        boolean isAdminRole = principal.getRole().equals("MANAGER") || principal.getRole().equals("MASTER");
+        if (isAdminRole) {
+            return reviewRepository.findAll()
+                    .stream()
+                    .map(reviewMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
+
+        return reviewRepository.findByUser_userId(principal.getUserId())
                 .stream()
                 .map(reviewMapper::toResponse)
                 .collect(Collectors.toList());

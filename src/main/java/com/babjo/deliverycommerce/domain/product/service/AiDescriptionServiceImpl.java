@@ -59,6 +59,6 @@ public class AiDescriptionServiceImpl implements AiDescriptionService {
             return "%s의 매력을 살린 %s 메뉴입니다.".formatted(productName, point);
         }
 
-        return "% 메뉴입니다.".formatted(productName);
+        return "%s 메뉴입니다.".formatted(productName);
     }
 }

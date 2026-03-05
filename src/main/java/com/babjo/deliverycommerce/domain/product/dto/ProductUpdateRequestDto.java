@@ -9,7 +9,6 @@ public class ProductUpdateRequestDto {
     @NotBlank
     private String name;
 
-    @NotBlank
     private Integer price;
 
     @NotBlank
@@ -17,6 +16,5 @@ public class ProductUpdateRequestDto {
 
     private String description;
 
-    @NotBlank
     private Boolean useAiDescription;
 }

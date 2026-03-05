@@ -1,13 +1,14 @@
-package com.babjo.deliverycommerce.product.service;
+package com.babjo.deliverycommerce.domain.service;
 
+import com.babjo.deliverycommerce.domain.product.service.AiDescriptionService;
+import com.babjo.deliverycommerce.domain.product.service.ProductServiceImpl;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
-import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
-import com.babjo.deliverycommerce.product.entity.Product;
-import com.babjo.deliverycommerce.product.repository.ProductRespository;
-import org.assertj.core.api.Assertions;
+import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +21,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 

@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.product.service;
+package com.babjo.deliverycommerce.domain.product.service;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;

@@ -1,11 +1,11 @@
-package com.babjo.deliverycommerce.product.controller;
+package com.babjo.deliverycommerce.domain.product.controller;
 
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.product.dto.AiDescriptionRequestDto;
-import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
-import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
-import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
-import com.babjo.deliverycommerce.product.service.ProductService;
+import com.babjo.deliverycommerce.domain.product.dto.AiDescriptionRequestDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
+import com.babjo.deliverycommerce.domain.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.product.dto;
+package com.babjo.deliverycommerce.domain.product.dto;
 
 import lombok.Getter;
 

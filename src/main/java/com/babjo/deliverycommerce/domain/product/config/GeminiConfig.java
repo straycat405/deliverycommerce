@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.product.config;
+package com.babjo.deliverycommerce.domain.product.config;
 
 import com.google.genai.Client;
 import org.springframework.context.annotation.Bean;

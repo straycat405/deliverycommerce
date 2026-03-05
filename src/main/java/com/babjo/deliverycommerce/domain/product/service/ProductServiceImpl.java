@@ -1,13 +1,13 @@
-package com.babjo.deliverycommerce.product.service;
+package com.babjo.deliverycommerce.domain.product.service;
 
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
-import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
-import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
-import com.babjo.deliverycommerce.product.entity.Product;
-import com.babjo.deliverycommerce.product.repository.ProductRespository;
+import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

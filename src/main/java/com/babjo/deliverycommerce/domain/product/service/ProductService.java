@@ -1,10 +1,9 @@
-package com.babjo.deliverycommerce.product.service;
+package com.babjo.deliverycommerce.domain.product.service;
 
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.product.dto.ProductCreateRequestDto;
-import com.babjo.deliverycommerce.product.dto.ProductResponseDto;
-import com.babjo.deliverycommerce.product.dto.ProductUpdateRequestDto;
-import com.babjo.deliverycommerce.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
+import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
 
 import java.util.List;
 import java.util.UUID;

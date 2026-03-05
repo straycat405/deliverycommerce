@@ -1,6 +1,6 @@
-package com.babjo.deliverycommerce.product.dto;
+package com.babjo.deliverycommerce.domain.product.dto;
 
-import com.babjo.deliverycommerce.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
 import lombok.Builder;
 import lombok.Getter;
 

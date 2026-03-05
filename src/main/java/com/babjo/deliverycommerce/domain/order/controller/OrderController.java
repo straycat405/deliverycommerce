@@ -57,14 +57,25 @@ public class OrderController {
 
     // 주문 취소 PATCH /v1/orders/{orderId}/cancel
     @PatchMapping("/{orderId}/cancel")
-    public ResponseEntity<Void> cancelOrder(
+    public ResponseEntity<OrderResponseDto> cancelOrder(
             // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
             @RequestHeader(name = "UserId")Long userId,
             @PathVariable UUID orderId,
             @RequestParam String reason
     ){
-        orderService.cancelOrder(orderId,userId, reason);
-        return ResponseEntity.noContent().build();
+        OrderResponseDto response = orderService.cancelOrder(orderId,userId, reason);
+        return ResponseEntity.ok(response);
+    }
+
+    // 주문 내역 삭제 ( 숨김 )
+    @DeleteMapping("/{orderId}")
+    public ResponseEntity<OrderResponseDto> deleteOrder(
+            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
+            @RequestHeader(name = "UserId") Long userId,
+            @PathVariable UUID orderId
+    ){
+        OrderResponseDto response = orderService.softDeleteOrder(orderId, userId);
+        return ResponseEntity.ok(response);
     }
 
     // 주문 접수

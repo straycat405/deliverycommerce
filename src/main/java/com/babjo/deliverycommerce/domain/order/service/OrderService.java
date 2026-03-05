@@ -56,7 +56,7 @@ public class OrderService {
 
     // 고객의 주문 내역 목록 조회 ( 페이징 )
     public Page<OrderResponseDto> getUserOders(Long userId, Pageable pageable){
-        Page<Order> orderPage = orderRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable);
+        Page<Order> orderPage = orderRepository.findByUserIdAndDeletedAtIsNull(userId, pageable);
 
         return orderPage.map(this::convertToResponseDto);
     }
@@ -66,23 +66,41 @@ public class OrderService {
     public OrderResponseDto getOrderDetails(UUID orderId){
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+
+        if(order.isDeleted()){
+            throw new IllegalStateException("이미 삭제된 주문 내역입니다.");
+        }
         return convertToResponseDto(order);
     }
 
 
     // 주문 취소
     @Transactional
-    public void cancelOrder(UUID orderId, Long userId, String reason){
+    public OrderResponseDto cancelOrder(UUID orderId, Long userId, String reason){
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("취소할 주문이 존재하지 않습니다."));
-
         if(!order.getUserId().equals(userId)){
             throw new IllegalStateException("본인의 주문만 취소 할 수 있습니다.");
         }
 
         order.cancel(userId,reason);
+        return convertToResponseDto(order);
 
+    }
+
+    // 주문 내역 삭제 ( 숨김 )
+    @Transactional
+    public OrderResponseDto softDeleteOrder(UUID orderId, Long userId){
+        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않거나 이미 삭제된 주문 입니다."));
+        if (!order.getUserId().equals(userId)) {
+            throw new IllegalStateException("본인의 주문 내역만 삭제할 수 있습니다.");
+        }
+
+        order.softDelete(userId);
+
+        return convertToResponseDto(order);
     }
 
     // 주문 접수

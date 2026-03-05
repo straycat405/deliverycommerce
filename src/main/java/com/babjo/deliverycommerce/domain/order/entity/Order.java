@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SoftDelete;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,7 +14,6 @@ import java.util.UUID;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SoftDelete(columnName = "is_deleted")
 @Table(name="p_order")
 public class Order extends BaseEntity {
 
@@ -93,13 +91,22 @@ public class Order extends BaseEntity {
 
     // 주문 취소
     public void cancel(Long userId, String reason){
-        if(!status.canCancel()){
+        if (this.status != OrderStatus.CREATED) {
             throw new IllegalStateException("취소가 불가능한 상태입니다.");
         }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
         this.canceledBy = userId;
         this.cancelReason = reason;
+    }
+
+    // 주문 내역 삭제 ( 숨김 )
+    public void softDelete(Long userId){
+
+        if(this.status != OrderStatus.PICKED_UP && this.status != OrderStatus.CANCELED){
+            throw new IllegalStateException("취소되거나 완료된 주문 내역만 삭제할 수 있습니다.");
+        }
+        super.delete(userId);
     }
 
     // 주문 접수
@@ -117,32 +124,32 @@ public class Order extends BaseEntity {
         this.cookingMinutes = cookingMinutes;
     }
 
-    // 조리 시작
+    // state : 조리 시작
     public void startPreparing(Long ownerId) {
         validateStatus(OrderStatus.ACCEPTED, "조리를 시작할 수 없는 상태입니다. ");
         this.status = OrderStatus.PREPARING;
         this.preparingStartedBy = ownerId;
     }
 
-    // 조리 완료 및 픽업 대기
+    // state : 조리 완료 및 픽업 대기
     public void readyPickup(Long ownerId){
         validateStatus(OrderStatus.PREPARING, "조리 시작한 주문만 픽업 대기 상태로 변경할 수 있습니다.");
         this.status = OrderStatus.PICKUP_READY;
         this.pickupReadieBy = ownerId;
     }
 
-    // 픽업 완료
+    // state : 픽업 완료
     public void completePickup(Long ownerId){
-        if(this.status != OrderStatus.PICKUP_READY){
-            throw new IllegalStateException("픽업 대기중인 주문만 픽업 완료 상태로 변경 가능합니다.");
-        }
+        validateStatus(OrderStatus.PICKUP_READY, "픽업 대기중인 주문만 픽업 완료 상태로 변경 가능합니다.");
         this.status = OrderStatus.PICKED_UP;
+        this.pickupBy = ownerId;
     }
 
-    // 상태 변경 중복 코드
+    // state 변경 중복 코드
     private void validateStatus(OrderStatus status, String message){
         if(this.status != status){
             throw new IllegalStateException(message);
         }
     }
+
 }

@@ -110,7 +110,7 @@ public class ReviewService {
                     .collect(Collectors.toList());
         }
 
-        return reviewRepository.findByUser_userId(principal.getUserId())
+        return reviewRepository.findAllByUser_UserId(principal.getUserId())
                 .stream()
                 .map(reviewMapper::toResponse)
                 .collect(Collectors.toList());
@@ -118,6 +118,7 @@ public class ReviewService {
 
     @Transactional
     public void deleteReview(UUID reviewId, UserPrincipal principal) {
+        // @Where(deleted_at IS NULL) 적용으로 이미 삭제된 리뷰는 REVIEW_NOT_FOUND 반환
         Review review = reviewRepository.findByReviewId(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 

@@ -54,6 +54,8 @@ class ReviewServiceTest {
     private UserPrincipal principal;        // userId=1L, CUSTOMER
     private UserPrincipal otherPrincipal;   // userId=2L, CUSTOMER (다른 작성자)
     private UserPrincipal managerPrincipal; // userId=3L, MANAGER
+    private UserPrincipal masterPrincipal;  // userId=4L, MASTER
+    private UserPrincipal ownerPrincipal;   // userId=5L, OWNER (리뷰 작성 불가, 삭제/수정도 본인 리뷰 아님)
     private Store store;
     private User user;
     private Review review;
@@ -63,6 +65,8 @@ class ReviewServiceTest {
         principal = new UserPrincipal(1L, "testuser", "CUSTOMER");
         otherPrincipal = new UserPrincipal(2L, "otheruser", "CUSTOMER");
         managerPrincipal = new UserPrincipal(3L, "manager", "MANAGER");
+        masterPrincipal = new UserPrincipal(4L, "master", "MASTER");
+        ownerPrincipal = new UserPrincipal(5L, "owner", "OWNER");
 
         store = Store.create(1L, "한식", "테스트 식당", "서울시 강남구");
         user = User.createForTest(1L, "testuser", "test@test.com", "테스터", UserEnumRole.CUSTOMER);
@@ -154,6 +158,25 @@ class ReviewServiceTest {
         verify(reviewRepository, never()).save(any());
     }
 
+    @Test
+    void createReview_실패_소프트삭제된_가게() {
+        // given — findByStoreIdAndDeletedAtIsNull가 empty를 반환 = soft-delete된 가게 포함
+        ReviewCreateRequest request = new ReviewCreateRequest();
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        // soft-delete된 가게는 findByStoreIdAndDeletedAtIsNull에서 empty 반환
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.createReview(principal, request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.STORE_NOT_FOUND));
+
+        verify(storeRepository, never()).save(any());
+        verify(reviewRepository, never()).save(any());
+    }
+
     // ───────────────────────────────────────────────
     // getReviews
     // ───────────────────────────────────────────────
@@ -233,6 +256,28 @@ class ReviewServiceTest {
     }
 
     @Test
+    void getReviews_MASTER_타인_리뷰_단건조회_성공() {
+        // given — MASTER도 타인 리뷰 조회 가능
+        UUID reviewId = UUID.randomUUID();
+        ReviewResponse expectedResponse = ReviewResponse.builder()
+                .reviewId(reviewId)
+                .userId(1L)
+                .rating(4)
+                .content("맛있어요")
+                .build();
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        given(reviewMapper.toResponse(review)).willReturn(expectedResponse);
+
+        // when
+        List<ReviewResponse> result = reviewService.getReviews(masterPrincipal, reviewId, null);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUserId()).isEqualTo(1L);
+    }
+
+    @Test
     void getReviews_storeId_필터_목록조회_성공_CUSTOMER() {
         // given — storeId 조회는 CUSTOMER도 모든 리뷰 조회 가능 (공개 정보)
         UUID storeId = UUID.randomUUID();
@@ -254,7 +299,7 @@ class ReviewServiceTest {
         assertThat(result.get(0).getStoreId()).isEqualTo(storeId);
         verify(reviewRepository, times(1)).findAllByStore_StoreId(storeId);
         verify(reviewRepository, never()).findAll();
-        verify(reviewRepository, never()).findByUser_userId(any());
+        verify(reviewRepository, never()).findAllByUser_UserId(any());
     }
 
     @Test
@@ -279,7 +324,7 @@ class ReviewServiceTest {
                 .content("맛있어요")
                 .build();
 
-        given(reviewRepository.findByUser_userId(1L)).willReturn(List.of(review));
+        given(reviewRepository.findAllByUser_UserId(1L)).willReturn(List.of(review));
         given(reviewMapper.toResponse(review)).willReturn(reviewResponse);
 
         // when
@@ -288,7 +333,7 @@ class ReviewServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getUserId()).isEqualTo(1L);
-        verify(reviewRepository, times(1)).findByUser_userId(1L);
+        verify(reviewRepository, times(1)).findAllByUser_UserId(1L);
         verify(reviewRepository, never()).findAll();
         verify(reviewRepository, never()).findByReviewId(any());
         verify(reviewRepository, never()).findAllByStore_StoreId(any());
@@ -297,14 +342,28 @@ class ReviewServiceTest {
     @Test
     void getReviews_파라미터없음_CUSTOMER_본인_리뷰_없으면_빈목록() {
         // given
-        given(reviewRepository.findByUser_userId(1L)).willReturn(List.of());
+        given(reviewRepository.findAllByUser_UserId(1L)).willReturn(List.of());
 
         // when
         List<ReviewResponse> result = reviewService.getReviews(principal, null, null);
 
         // then
         assertThat(result).isEmpty();
-        verify(reviewRepository, times(1)).findByUser_userId(1L);
+        verify(reviewRepository, times(1)).findAllByUser_UserId(1L);
+        verify(reviewRepository, never()).findAll();
+    }
+
+    @Test
+    void getReviews_파라미터없음_OWNER_본인_리뷰만_반환() {
+        // given — OWNER도 CUSTOMER와 동일하게 본인 리뷰만 반환
+        given(reviewRepository.findAllByUser_UserId(5L)).willReturn(List.of());
+
+        // when
+        List<ReviewResponse> result = reviewService.getReviews(ownerPrincipal, null, null);
+
+        // then
+        assertThat(result).isEmpty();
+        verify(reviewRepository, times(1)).findAllByUser_UserId(5L);
         verify(reviewRepository, never()).findAll();
     }
 
@@ -326,13 +385,12 @@ class ReviewServiceTest {
         // then
         assertThat(result).hasSize(1);
         verify(reviewRepository, times(1)).findAll();
-        verify(reviewRepository, never()).findByUser_userId(any());
+        verify(reviewRepository, never()).findAllByUser_UserId(any());
     }
 
     @Test
     void getReviews_파라미터없음_MASTER_전체_리뷰_반환() {
         // given — MASTER도 전체 리뷰 조회 가능
-        UserPrincipal masterPrincipal = new UserPrincipal(4L, "master", "MASTER");
         given(reviewRepository.findAll()).willReturn(List.of());
 
         // when
@@ -341,7 +399,7 @@ class ReviewServiceTest {
         // then
         assertThat(result).isEmpty();
         verify(reviewRepository, times(1)).findAll();
-        verify(reviewRepository, never()).findByUser_userId(any());
+        verify(reviewRepository, never()).findAllByUser_UserId(any());
     }
 
     // ───────────────────────────────────────────────
@@ -414,6 +472,45 @@ class ReviewServiceTest {
 
         // then
         assertThat(result.getRating()).isEqualTo(3);
+    }
+
+    @Test
+    void updateReview_성공_MASTER는_타인_리뷰_수정_가능() {
+        // given
+        UUID reviewId = UUID.randomUUID();
+
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+        given(request.getRating()).willReturn(2);
+        given(request.getContent()).willReturn("마스터 수정");
+
+        ReviewUpdateResponse expectedResponse = new ReviewUpdateResponse();
+        expectedResponse.setReviewId(reviewId);
+        expectedResponse.setRating(2);
+        expectedResponse.setContent("마스터 수정");
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        given(reviewMapper.toUpdateResponse(review)).willReturn(expectedResponse);
+
+        // when
+        ReviewUpdateResponse result = reviewService.updateReview(masterPrincipal, reviewId, request);
+
+        // then
+        assertThat(result.getRating()).isEqualTo(2);
+    }
+
+    @Test
+    void updateReview_실패_OWNER는_타인_리뷰_수정_불가() {
+        // given — OWNER는 본인 리뷰가 아닌 타인 리뷰 수정 불가
+        UUID reviewId = UUID.randomUUID();
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.updateReview(ownerPrincipal, reviewId, request))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REVIEW_FORBIDDEN));
     }
 
     @Test
@@ -533,6 +630,54 @@ class ReviewServiceTest {
     }
 
     @Test
+    void deleteReview_성공_MASTER는_타인_리뷰_삭제_가능() {
+        // given
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4);
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+
+        // when
+        reviewService.deleteReview(reviewId, masterPrincipal);
+
+        // then
+        assertThat(review.getDeletedAt()).isNotNull();
+        assertThat(review.getDeletedBy()).isEqualTo(4L);
+    }
+
+    @Test
+    void deleteReview_실패_OWNER는_타인_리뷰_삭제_불가() {
+        // given — OWNER는 본인 리뷰가 아닌 타인 리뷰 삭제 불가
+        UUID reviewId = UUID.randomUUID();
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, ownerPrincipal))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REVIEW_FORBIDDEN));
+
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteReview_이미_소프트삭제된_리뷰는_REVIEW_NOT_FOUND_반환() {
+        // given
+        // @Where(deleted_at IS NULL) 적용으로 이미 삭제된 리뷰는
+        // findByReviewId가 empty를 반환 → REVIEW_NOT_FOUND 발생이 올바른 동작
+        UUID reviewId = UUID.randomUUID();
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, principal))
+                .isInstanceOf(CustomException.class)
+                .satisfies(e -> assertThat(((CustomException) e).getErrorCode())
+                        .isEqualTo(ErrorCode.REVIEW_NOT_FOUND));
+
+        verify(storeRepository, never()).save(any());
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
     void deleteReview_성공_store_통계_갱신됨() {
         // given
         UUID reviewId = UUID.randomUUID();
@@ -564,21 +709,5 @@ class ReviewServiceTest {
         verify(reviewRepository, never()).save(any());
     }
 
-    @Test
-    void deleteReview_이미_삭제된_리뷰는_중복_삭제되지_않음() {
-        // given
-        UUID reviewId = UUID.randomUUID();
-        review.delete(principal.getUserId()); // 미리 삭제 처리
-        var firstDeletedAt = review.getDeletedAt();
-
-        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
-
-        // when
-        reviewService.deleteReview(reviewId, principal);
-
-        // then — BaseEntity.delete()의 idempotent 보장 — deletedAt이 최초 값 유지
-        assertThat(review.getDeletedAt()).isEqualTo(firstDeletedAt);
-        verify(reviewRepository, times(1)).save(review);
-    }
 }
 

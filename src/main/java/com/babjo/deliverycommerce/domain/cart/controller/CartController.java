@@ -1,12 +1,14 @@
 package com.babjo.deliverycommerce.domain.cart.controller;
 
 
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemAddRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
 import com.babjo.deliverycommerce.domain.cart.service.CartService;
 import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -81,5 +83,21 @@ public class CartController {
         log.info("장바구니 비우기 API 완료: userId={}", userId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/items")
+    public CartResponseDto addItem(@Valid @RequestBody CartItemAddRequestDto request,
+                                   Authentication authentication) {
+
+        Long userId = currentUserResolver.getUserId(authentication);
+
+        log.info("장바구니 상품 추가 API 요청: userId={}, productId={}, quantity={}", userId, request.getProductId(), request.getQuantity());
+
+        CartResponseDto response = cartService.addItem(userId, request);
+
+        log.info("장바구니 상품 추가 API 완료: userId={}, cartId={}, itemCount={}", userId, response.getCartId(), response.getItems().size());
+
+        return response;
+
     }
 }

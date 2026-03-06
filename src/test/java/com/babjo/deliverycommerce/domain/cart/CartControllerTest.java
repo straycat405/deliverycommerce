@@ -24,8 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -148,5 +147,23 @@ public class CartControllerTest {
                         .content(requestBody))
                 .andExpect(status().isBadRequest());
 
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("장바구니 항목 삭제 API 호출 시 NO CONTENT 반환")
+    void 삭제_API_호출시_204_반환() throws Exception {
+        //given
+        UUID cartItemId = UUID.randomUUID();
+
+        given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
+
+        //when & then
+        mockMvc.perform(delete("/v1/cart/items/{cartItemId}", cartItemId)
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        //서비스 호출 검증
+        then(cartService).should().deleteItem(eq(1L), eq(cartItemId));
     }
 }

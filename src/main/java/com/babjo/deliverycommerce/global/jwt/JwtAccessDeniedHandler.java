@@ -1,6 +1,6 @@
 package com.babjo.deliverycommerce.global.jwt;
 
-import com.babjo.deliverycommerce.global.common.dto.ApiResponse;
+import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +25,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         response.setContentType("application/json;charset=UTF-8");
 
-        String body = objectMapper.writeValueAsString(ApiResponse.error(ErrorCode.FORBIDDEN));
+        String body = objectMapper.writeValueAsString(CommonResponse.error(ErrorCode.FORBIDDEN));
         response.getWriter().write(body);
     }
 }

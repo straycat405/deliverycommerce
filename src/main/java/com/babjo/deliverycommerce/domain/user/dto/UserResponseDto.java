@@ -1,12 +1,12 @@
-package com.babjo.deliverycommerce.user.dto;
+package com.babjo.deliverycommerce.domain.user.dto;
 
-import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Getter
-public class SignupResponseDto {
+public class UserResponseDto {
 
     private final Long userId;
     private final String username;
@@ -16,7 +16,7 @@ public class SignupResponseDto {
     private final LocalDateTime createdAt;
 
     // 엔티티 -> DTO 변환은 DTO 생성자 쪽에서 처리
-    public SignupResponseDto(User user) {
+    public UserResponseDto(User user) {
         this.userId = user.getUserId();
         this.username = user.getUsername();
         this.nickname = user.getNickname();

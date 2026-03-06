@@ -9,6 +9,10 @@ spring:
       ddl-auto: none
   config:
     import: optional:file:.env[.properties]
+  security:
+    user:
+      name: unused
+      password: unused
 
   data:
     redis:
@@ -18,5 +22,21 @@ spring:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-expiration: 3600000
-  refresh-expiration: 604800000
+  access-expiration: 900000 # 15min
+  refresh-expiration: 604800000 # 7D
+
+# swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html      # UI 경로 변경
+    tags-sorter: alpha          # 태그 알파벳 정렬
+    operations-sorter: method   # HTTP 메서드 순 정렬
+  api-docs:
+    path: /v3/api-docs          # API docs 경로
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# Google Ai
+google:
+  ai:
+    api-key: ${GOOGLE_API_KEY}

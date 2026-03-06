@@ -43,6 +43,23 @@ public enum UserEnumRole {
     }
 
     /**
+     * 관리자용 계정 생성시 ROLE 검증
+     * CUSTOMER / OWNER / MANAGER만 가능
+     */
+    public static UserEnumRole ofAdminSignup(String roleName) {
+        try {
+            UserEnumRole role = UserEnumRole.valueOf(roleName.toUpperCase());
+            if (role == MASTER) {
+                throw new CustomException(ErrorCode.INVALID_ROLE);
+            }
+            return role;
+        } catch (IllegalArgumentException e) {
+            // valueOf() 실패 — 정의되지 않은 값
+            throw new CustomException(ErrorCode.INVALID_ROLE);
+        }
+    }
+
+    /**
      * 문자열 → UserEnumRole 변환 (전체 허용, 관리자용)
      * 권한 수정 API 등에서 사용
      */

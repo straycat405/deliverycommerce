@@ -35,10 +35,5 @@ Desktop.ini
 logs/
 
 # Docs / local
-CLAUDE.md
-docs/PROGRESS.md
-EC2_ENV_SETUP.md
-docs/COMMON_LOGIC_GUIDE.md
-.claude/
-dump.rdb
 docs/
+dump.rdb

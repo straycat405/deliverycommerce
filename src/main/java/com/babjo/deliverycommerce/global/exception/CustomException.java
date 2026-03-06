@@ -4,7 +4,7 @@ package com.babjo.deliverycommerce.global.exception;
  * 비즈니스 예외 클래스
  *
  * 서비스 로직에서 의도적으로 발생시키는 예외를 표현합니다.
- * GlobalExceptionHandler가 자동으로 잡아서 ApiResponse 형식으로 응답을 처리합니다.
+ * GlobalExceptionHandler가 자동으로 잡아서 CommonResponse 형식으로 응답을 처리합니다.
  *
  * ── 사용법 ───────────────────────────────────────────────────────
  *

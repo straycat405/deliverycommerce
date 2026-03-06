@@ -8,7 +8,7 @@ package com.babjo.deliverycommerce.global.exception;
  *
  *  새 에러코드 추가할때
  *  1. 본인 도메인 영역 주석 아래에 추가
- *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "한글 메시지")
+ *  2. 형식 : 에러명(HttpStatus.상태코드, "에러코드", "메시지 내용")
  *  ex) ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다.")
  *  3. develop 브랜치에 PR 날려서 충돌 방지할 것 (동시 수정 지양)
  *  4. 에러코드 문자열( 2nd Parameter)는 EUNM 이름과 동일하게
@@ -40,11 +40,15 @@ public enum ErrorCode {
     WITHDRAWN_USER(HttpStatus.BAD_REQUEST, "WITHDRAWN_USER", "탈퇴한 계정입니다."),
     INVALID_ROLE(HttpStatus.BAD_REQUEST, "INVALID_ROLE", "유효하지 않은 권한 값입니다."),
     LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "LOGIN_FAILED", "아이디 또는 비밀번호가 올바르지 않습니다."),
+    CANNOT_DELETE_SELF(HttpStatus.FORBIDDEN,"CANNOT_DELETE_SELF","본인 계정은 삭제할 수 없습니다."),
+    CANNOT_UPDATE_ROLE_SELF(HttpStatus.FORBIDDEN,"CANNOT_UPDATE_ROLE_SELF","본인 권한은 변경할 수 없습니다."),
 
     // ── Common ────────────────────────────────────────
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 유효하지 않습니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
+    INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "INVALID_PAGE_SIZE", "페이지 크기는 10, 30, 50만 가능합니다."),
+    INVALID_SORT_BY(HttpStatus.BAD_REQUEST, "INVALID_SORT_BY", "정렬 기준이 올바르지 않습니다."),
 
     // ── Infrastructure  ─────────────────────
     REDIS_OPERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "REDIS_OPERATION_FAILED", "인증 처리 중 오류가 발생했습니다."),
@@ -52,6 +56,10 @@ public enum ErrorCode {
     // ── Store / Product / Order / Payment / Review ────
     // 각 도메인 담당자가 PR로 추가
 
+    // ── Product  ──────────────────────────────────────────
+    PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_NOT_FOUND", "존재하지 않는 상품입니다."),
+    PRODUCT_DELETED(HttpStatus.GONE, "PRODUCT_DELETED", "삭제된 상품입니다."),
+  
     // ── Store ─────────────────────────────────────────
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
     STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다."),

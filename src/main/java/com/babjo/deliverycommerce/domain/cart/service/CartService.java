@@ -95,6 +95,32 @@ public class CartService {
                 userId, cart.getCartId(), cartItemId);
     }
 
+    @Transactional
+    public void clearCart(Long userId) {
+        log.info("장바구니 비우기 요청: userId={}", userId);
+
+        /*사용자 장바구니 조회 (없으면 그냥 종료)*/
+        Cart cart = cartRepository.findByUserIdAndDeletedAtIsNull(userId).orElse(null);
+
+        if (cart == null) {
+            log.info("장바구니 비우기 대상 없음(장바구니 없음): userId={}", userId);
+            return;
+        }
+
+        /*장바구니에 남아있는 활서 CartItem 조회*/
+        List<CartItem> cartItems = cartItemRepository.findAllByCartIdAndDeletedAtIsNull(cart.getCartId());
+
+        /*전부 soft delete*/
+        for (int i = 0; i < cartItems.size(); i++) {
+            cartItems.get(i).delete(userId);
+        }
+
+        /*장바구니가 비었으니 storeId 초기화*/
+        cart.clearStore();
+
+        log.info("장바구니 비우기 완료: userId={}, cartId={}, deletedItemCount={}", userId, cart.getCartId(), cartItems.size());
+    }
+
     /*내 장바구니인지 확인*/
     private void validateCartOwner(Cart cart, Long userId) {
         if (!cart.getUserId().equals(userId)) {

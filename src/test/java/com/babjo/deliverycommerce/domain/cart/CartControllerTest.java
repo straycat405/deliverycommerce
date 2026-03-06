@@ -166,4 +166,20 @@ public class CartControllerTest {
         //서비스 호출 검증
         then(cartService).should().deleteItem(eq(1L), eq(cartItemId));
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("장바구니 비우기 API 호출 시 NO CONTENT 반환")
+    void 비우기_API_호출시_204_반환() throws Exception {
+        //given
+        given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
+
+        //when & then
+        mockMvc.perform(delete("/v1/cart")
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        //then
+        then(cartService).should().clearCart(eq(1L));
+    }
 }

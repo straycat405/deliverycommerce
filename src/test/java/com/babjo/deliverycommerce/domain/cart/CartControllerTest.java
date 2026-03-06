@@ -2,6 +2,7 @@ package com.babjo.deliverycommerce.domain.cart;
 
 
 import com.babjo.deliverycommerce.domain.cart.controller.CartController;
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemAddRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemResponseDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
@@ -181,5 +182,50 @@ public class CartControllerTest {
 
         //then
         then(cartService).should().clearCart(eq(1L));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("장바구니 상품 추가 API 호출 시 장바구니 정보를 반환")
+    void 상품_추가_호출시_정보_반환() throws Exception {
+        //given
+        UUID productId = UUID.randomUUID();
+        UUID cartId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        UUID cartItemId = UUID.randomUUID();
+
+        String requestBody = """
+                {
+                  "productId": "%s",
+                  "quantity": 2
+                }
+                """.formatted(productId);
+
+        CartItemResponseDto item = new CartItemResponseDto(cartItemId, productId, 2);
+        CartResponseDto response = new CartResponseDto(cartId, storeId, List.of(item));
+
+        // 컨트롤러는 resolver로 userId를 뽑으니, 테스트에선 resolver가 1L을 반환하도록 고정
+        given(currentUserResolver.getUserId(any(Authentication.class)))
+                .willReturn(1L);
+
+        // 컨트롤러가 서비스 호출하면, 우리가 준비한 response를 반환하게 설정
+        given(cartService.addItem(eq(1L), any(CartItemAddRequestDto.class)))
+                .willReturn(response);
+
+        // when & then
+        mockMvc.perform(post("/v1/cart/items")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cartId").value(cartId.toString()))
+                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].cartItemId").value(cartItemId.toString()))
+                .andExpect(jsonPath("$.items[0].productId").value(productId.toString()))
+                .andExpect(jsonPath("$.items[0].quantity").value(2));
+
+        // then: 컨트롤러가 서비스 메서드를 실제로 호출했는지 확인(선택이지만 강력 추천)
+        then(cartService).should().addItem(eq(1L), any(CartItemAddRequestDto.class));
     }
 }

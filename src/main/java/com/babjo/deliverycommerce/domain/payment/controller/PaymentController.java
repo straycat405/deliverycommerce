@@ -1,10 +1,10 @@
-package com.babjo.deliverycommerce.domain.payment.presentation.controller;
+package com.babjo.deliverycommerce.domain.payment.controller;
 
+import com.babjo.deliverycommerce.domain.payment.dto.response.*;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentStatus;
-import com.babjo.deliverycommerce.domain.payment.presentation.dto.request.PaymentCancelRequest;
-import com.babjo.deliverycommerce.domain.payment.presentation.dto.request.PaymentConfirmRequest;
-import com.babjo.deliverycommerce.domain.payment.presentation.dto.request.PaymentCreateRequest;
-import com.babjo.deliverycommerce.domain.payment.presentation.dto.response.*;
+import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentCancelRequest;
+import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentConfirmRequest;
+import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentCreateRequest;
 import com.babjo.deliverycommerce.domain.payment.service.PaymentService;
 import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.security.CurrentUserResolver;

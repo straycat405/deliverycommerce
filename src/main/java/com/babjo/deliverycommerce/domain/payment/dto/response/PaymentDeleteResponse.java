@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.domain.payment.presentation.dto.response;
+package com.babjo.deliverycommerce.domain.payment.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;

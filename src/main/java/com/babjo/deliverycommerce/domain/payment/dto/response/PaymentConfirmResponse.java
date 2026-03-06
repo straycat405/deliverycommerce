@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.domain.payment.presentation.dto.response;
+package com.babjo.deliverycommerce.domain.payment.dto.response;
 
 import com.babjo.deliverycommerce.domain.payment.entity.Payment;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentStatus;
@@ -9,21 +9,21 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * 결제 취소 응답 DTO (200 OK)
+ * 결제 승인 응답 DTO (200 OK)
  */
 @Getter
 @Builder
-public class PaymentCancelResponse {
+public class PaymentConfirmResponse {
 
     private UUID paymentId;
     private PaymentStatus status;
-    private LocalDateTime canceledAt;
+    private LocalDateTime approvedAt;
 
-    public static PaymentCancelResponse from(Payment payment) {
-        return PaymentCancelResponse.builder()
+    public static PaymentConfirmResponse from(Payment payment) {
+        return PaymentConfirmResponse.builder()
                 .paymentId(payment.getPaymentId())
                 .status(payment.getPaymentStatus())
-                .canceledAt(payment.getUpdatedAt()) // 취소 시각은 updatedAt 활용
+                .approvedAt(payment.getApprovedAt())
                 .build();
     }
 }

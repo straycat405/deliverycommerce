@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.domain.payment.presentation.dto.response;
+package com.babjo.deliverycommerce.domain.payment.dto.response;
 
 import com.babjo.deliverycommerce.domain.payment.entity.Payment;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentMethod;

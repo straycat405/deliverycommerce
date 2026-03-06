@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.domain.payment.presentation.dto.request;
+package com.babjo.deliverycommerce.domain.payment.dto.request;
 
 import jakarta.validation.constraints.Size;
 import lombok.Getter;

@@ -1,10 +1,9 @@
 package com.babjo.deliverycommerce.domain.payment.controller;
 
+import com.babjo.deliverycommerce.domain.payment.dto.response.*;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentMethod;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentStatus;
 import com.babjo.deliverycommerce.domain.payment.entity.PgProvider;
-import com.babjo.deliverycommerce.domain.payment.presentation.controller.PaymentController;
-import com.babjo.deliverycommerce.domain.payment.presentation.dto.response.*;
 import com.babjo.deliverycommerce.domain.payment.service.PaymentService;
 import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,12 +1,13 @@
-package com.babjo.deliverycommerce.user.controller;
+package com.babjo.deliverycommerce.domain.user.controller;
 
+import com.babjo.deliverycommerce.domain.user.dto.*;
 import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.user.dto.*;
-import com.babjo.deliverycommerce.user.service.UserService;
+import com.babjo.deliverycommerce.domain.user.dto.*;
+import com.babjo.deliverycommerce.domain.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

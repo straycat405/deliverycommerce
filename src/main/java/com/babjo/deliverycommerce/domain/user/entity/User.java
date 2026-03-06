@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.user.entity;
+package com.babjo.deliverycommerce.domain.user.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;

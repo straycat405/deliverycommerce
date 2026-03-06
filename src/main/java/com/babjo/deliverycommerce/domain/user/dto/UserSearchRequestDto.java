@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.user.dto;
+package com.babjo.deliverycommerce.domain.user.dto;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;

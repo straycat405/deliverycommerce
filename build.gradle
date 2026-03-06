@@ -76,6 +76,7 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	jvmArgs '-Djdk.attach.allowAttachSelf=true'
 }
 
 // QueryDSL Q Class 빌드

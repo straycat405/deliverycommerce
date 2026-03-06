@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
+
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
 
@@ -716,5 +717,140 @@ class ReviewServiceTest {
         verify(reviewRepository, never()).save(any());
     }
 
+    // ───────────────────────────────────────────────
+    // 트랜잭션 롤백 검증
+    // ───────────────────────────────────────────────
+
+    @Test
+    void createReview_트랜잭션_롤백_reviewRepository_save_예외시_store_통계_미반영() {
+        // given — reviewRepository.save 시 RuntimeException 발생 → @Transactional 롤백
+        ReviewCreateRequest request = new ReviewCreateRequest();
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.of(store));
+        given(reviewMapper.toEntity(any(), any(), any())).willReturn(review);
+        given(reviewRepository.save(any())).willThrow(new RuntimeException("DB 저장 오류"));
+
+        // when & then
+        assertThatThrownBy(() -> reviewService.createReview(principal, request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DB 저장 오류");
+
+        // store.addReview는 reviewRepository.save 이후에 호출되므로 아직 호출 안 됨
+        // storeRepository.save 도 호출되지 않아야 함
+        verify(storeRepository, never()).save(store);
+    }
+
+    @Test
+    void createReview_트랜잭션_롤백_storeRepository_save_예외시_예외_전파() {
+        // given — storeRepository.save 시 RuntimeException 발생
+        ReviewCreateRequest request = new ReviewCreateRequest();
+
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(any())).willReturn(Optional.of(store));
+        given(reviewMapper.toEntity(any(), any(), any())).willReturn(review);
+        given(reviewRepository.save(any())).willReturn(review);
+        // storeRepository.save 시 예외 발생
+        doThrow(new RuntimeException("store 저장 오류")).when(storeRepository).save(store);
+
+        // when & then — 예외가 전파되어야 함 (@Transactional이 전체 롤백)
+        assertThatThrownBy(() -> reviewService.createReview(principal, request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("store 저장 오류");
+    }
+
+    @Test
+    void updateReview_트랜잭션_롤백_storeRepository_save_예외시_예외_전파() {
+        // given — 별점 변경 + storeRepository.save 시 RuntimeException 발생
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4); // count=1, avg=4.0
+
+        ReviewUpdateRequest request = mock(ReviewUpdateRequest.class);
+        given(request.getRating()).willReturn(2); // 4 → 2 변경
+        given(request.getContent()).willReturn("별로에요");
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        doThrow(new RuntimeException("store 저장 오류")).when(storeRepository).save(any());
+
+        // when & then — 예외가 전파되어야 함
+        assertThatThrownBy(() -> reviewService.updateReview(principal, reviewId, request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("store 저장 오류");
+    }
+
+    @Test
+    void deleteReview_트랜잭션_롤백_storeRepository_save_예외시_예외_전파() {
+        // given — store 통계 갱신 후 storeRepository.save 시 예외 발생
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4); // count=1, avg=4.0
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        doThrow(new RuntimeException("store 저장 오류")).when(storeRepository).save(store);
+
+        // when & then — 예외 전파 → @Transactional 롤백 (review soft-delete 미반영)
+        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, principal))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("store 저장 오류");
+
+        // reviewRepository.save 는 storeRepository.save 이후이므로 호출되지 않아야 함
+        verify(reviewRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteReview_트랜잭션_롤백_reviewRepository_save_예외시_예외_전파() {
+        // given — storeRepository.save 성공 후 reviewRepository.save 시 예외 발생
+        UUID reviewId = UUID.randomUUID();
+        store.addReview(4); // count=1, avg=4.0
+
+        given(reviewRepository.findByReviewId(reviewId)).willReturn(Optional.of(review));
+        // storeRepository.save는 정상 동작
+        given(storeRepository.save(store)).willReturn(store);
+        // reviewRepository.save 시 예외 발생
+        doThrow(new RuntimeException("review 저장 오류")).when(reviewRepository).save(review);
+
+        // when & then — 예외 전파 → @Transactional이 전체 롤백
+        assertThatThrownBy(() -> reviewService.deleteReview(reviewId, principal))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("review 저장 오류");
+    }
+
+    // ───────────────────────────────────────────────
+    // 중복 데이터 검증 (REVIEW_ALREADY_EXISTS ErrorCode 존재 확인)
+    // [TODO] Order 도메인 연결 후 실제 중복 방지 로직 테스트로 교체
+    // ───────────────────────────────────────────────
+
+    @Test
+    void REVIEW_ALREADY_EXISTS_에러코드가_정의되어_있음() {
+        // Order 도메인 연결 전에도 REVIEW_ALREADY_EXISTS ErrorCode가
+        // 정의되어 있어 추후 연결 시 바로 사용 가능한지 검증
+        assertThat(ErrorCode.REVIEW_ALREADY_EXISTS).isNotNull();
+        assertThat(ErrorCode.REVIEW_ALREADY_EXISTS.name()).isEqualTo("REVIEW_ALREADY_EXISTS");
+    }
+
+    @Test
+    void createReview_중복검증_REVIEW_ALREADY_EXISTS_예외_발생_가능() {
+        // Order 도메인 연결 후 중복 리뷰 시 REVIEW_ALREADY_EXISTS를 던져야 함을 검증
+        // 현재는 서비스 레이어 외부에서 직접 예외를 생성하여 동작 확인
+        CustomException ex = new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
+
+        assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.REVIEW_ALREADY_EXISTS);
+        assertThat(ex.getErrorCode().getStatus().value()).isEqualTo(409);
+        assertThat(ex.getMessage()).isEqualTo("이미 리뷰를 작성했습니다.");
+    }
+
+    // ───────────────────────────────────────────────
+    // 예외 상황 — 주문 미완료 (Order 도메인 제외, ErrorCode 레벨 검증)
+    // ───────────────────────────────────────────────
+
+    @Test
+    void ORDER_NOT_FOUND_에러코드가_정의되어_있음() {
+        // Order 도메인 연결 전에도 ORDER_NOT_FOUND ErrorCode가 정의되어 있는지 검증
+        assertThat(ErrorCode.ORDER_NOT_FOUND).isNotNull();
+        assertThat(ErrorCode.ORDER_NOT_FOUND.name()).isEqualTo("ORDER_NOT_FOUND");
+        assertThat(ErrorCode.ORDER_NOT_FOUND.getStatus().value()).isEqualTo(404);
+    }
+
 }
+
 

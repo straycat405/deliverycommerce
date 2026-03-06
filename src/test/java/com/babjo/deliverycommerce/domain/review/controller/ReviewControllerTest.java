@@ -572,4 +572,119 @@ class ReviewControllerTest {
 
         verify(reviewService, times(1)).deleteReview(eq(reviewId), any(UserPrincipal.class));
     }
+
+    // ───────────────────────────────────────────────
+    // 추가 예외 전파 케이스
+    // ───────────────────────────────────────────────
+
+    @Test
+    void createReview_실패_가게없음_예외전파() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        when(reviewService.createReview(any(UserPrincipal.class), any()))
+                .thenThrow(new CustomException(ErrorCode.STORE_NOT_FOUND));
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  4,
+                  "content": "맛있어요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+
+        verify(reviewService, times(1)).createReview(any(UserPrincipal.class), any());
+    }
+
+    @Test
+    void createReview_실패_중복리뷰_예외전파() throws Exception {
+        // Order 도메인 연결 후 동일 orderId 재등록 시도 → REVIEW_ALREADY_EXISTS
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        when(reviewService.createReview(any(UserPrincipal.class), any()))
+                .thenThrow(new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS));
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  4,
+                  "content": "맛있어요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isConflict());
+
+        verify(reviewService, times(1)).createReview(any(UserPrincipal.class), any());
+    }
+
+    @Test
+    void deleteReview_실패_존재하지_않는_리뷰_404_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        doThrow(new CustomException(ErrorCode.REVIEW_NOT_FOUND))
+                .when(reviewService).deleteReview(eq(reviewId), any(UserPrincipal.class));
+
+        mockMvc.perform(delete("/v1/reviews/" + reviewId))
+                .andExpect(status().isNotFound());
+
+        verify(reviewService, times(1)).deleteReview(eq(reviewId), any(UserPrincipal.class));
+    }
+
+    @Test
+    void updateReview_실패_존재하지_않는_리뷰_404_예외전파() throws Exception {
+        UUID reviewId = UUID.randomUUID();
+
+        when(reviewService.updateReview(any(UserPrincipal.class), eq(reviewId), any()))
+                .thenThrow(new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+        String requestBody = """
+                {
+                  "rating":  4,
+                  "content": "맛있어요"
+                }
+                """;
+
+        mockMvc.perform(put("/v1/reviews/" + reviewId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isNotFound());
+
+        verify(reviewService, times(1)).updateReview(any(UserPrincipal.class), eq(reviewId), any());
+    }
+
+    @Test
+    void createReview_실패_서버내부오류_500_예외전파() throws Exception {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+
+        when(reviewService.createReview(any(UserPrincipal.class), any()))
+                .thenThrow(new RuntimeException("예상치 못한 오류"));
+
+        String requestBody = String.format("""
+                {
+                  "orderId": "%s",
+                  "storeId": "%s",
+                  "rating":  4,
+                  "content": "맛있어요"
+                }
+                """, orderId, storeId);
+
+        mockMvc.perform(post("/v1/reviews")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isInternalServerError());
+    }
 }
+
+

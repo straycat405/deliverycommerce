@@ -95,6 +95,58 @@ class ReviewTest {
     }
 
     @Test
+    void updateReview_rating이_null이면_기존값_유지() {
+        // given
+        Review review = Review.create(user, store, 4, "맛있어요");
+
+        // when — rating null 전달
+        review.updateReview(null, "새로운 내용");
+
+        // then — rating은 그대로 4, content만 변경됨
+        assertThat(review.getRating()).isEqualTo(4);
+        assertThat(review.getContent()).isEqualTo("새로운 내용");
+    }
+
+    @Test
+    void updateReview_content가_blank이면_기존값_유지() {
+        // given
+        Review review = Review.create(user, store, 4, "맛있어요");
+
+        // when — content 공백 전달
+        review.updateReview(5, "   ");
+
+        // then — rating만 변경, content는 기존값 유지
+        assertThat(review.getRating()).isEqualTo(5);
+        assertThat(review.getContent()).isEqualTo("맛있어요");
+    }
+
+    @Test
+    void updateReview_content가_null이면_기존값_유지() {
+        // given
+        Review review = Review.create(user, store, 4, "맛있어요");
+
+        // when — content null 전달
+        review.updateReview(5, null);
+
+        // then — rating만 변경, content는 기존값 유지
+        assertThat(review.getRating()).isEqualTo(5);
+        assertThat(review.getContent()).isEqualTo("맛있어요");
+    }
+
+    @Test
+    void updateReview_rating과_content_모두_null이면_아무것도_바뀌지_않음() {
+        // given
+        Review review = Review.create(user, store, 4, "맛있어요");
+
+        // when
+        review.updateReview(null, null);
+
+        // then
+        assertThat(review.getRating()).isEqualTo(4);
+        assertThat(review.getContent()).isEqualTo("맛있어요");
+    }
+
+    @Test
     void updateReview_여러번_호출해도_마지막_값으로_덮어씀() {
         // given
         Review review = Review.create(user, store, 3, "처음엔 보통");

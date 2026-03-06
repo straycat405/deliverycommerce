@@ -73,8 +73,7 @@ public enum ErrorCode {
     INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "INVALID_QUANTITY", "수량은 1 이상이어야 합니다."),
 
     /*한 장바구니에 다른 Store 상품을 담으려 할 때*/
-    CART_STORE_MISMATCH(HttpStatus.BAD_REQUEST, "CART_STORE_MISMATCH", "다른 가게의 상품은 같은 장부구니에 담을 수 없습니다."),
-
+    CART_STORE_MISMATCH(HttpStatus.BAD_REQUEST, "CART_STORE_MISMATCH", "다른 가게의 상품은 같은 장바구니에 담을 수 없습니다."),
 
     // ── Order ─────────────────────────────────────────
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다."),

@@ -153,7 +153,7 @@ public class CartService {
 
         if (cartItem != null) {
             cartItem.increaseQuantity(quantity);
-            log.info("장바구니 상품 수량 증가: userId={}, cartId={}, productId={}, newQuantity={}", userId, cart.getCartId(), productId, quantity);
+            log.info("장바구니 상품 수량 증가: userId={}, cartId={}, productId={}, newQuantity={}", userId, cart.getCartId(), productId, cartItem.getQuantity());
 
         } else {
             CartItem newItem = CartItem.create(cart.getCartId(), productId, quantity);

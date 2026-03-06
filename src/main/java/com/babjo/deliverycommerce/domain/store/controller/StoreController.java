@@ -10,6 +10,7 @@ import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,10 +35,12 @@ public class StoreController {
 
     /**
      * 가게 생성
+     * - OWNER 권한 사용자만 가능
      * - ownerId는 인증 객체에서 추출한 현재 사용자 ID
      * - 요청 본문은 유효성 검사
      */
     @PostMapping
+    @PreAuthorize("hasRole('OWNER')")
     @ResponseStatus(HttpStatus.CREATED)
     public StoreResponseDto create(Authentication authentication,
                                    @Valid @RequestBody StoreCreateRequestDto request) {
@@ -70,10 +73,12 @@ public class StoreController {
 
     /**
      * 가게 수정
+     * - OWNER 권한 사용자만 가능
      * - actorUserId는 인증 객체에서 추출한 현재 사용자 ID
      * - 요청 본문은 유효성 검사
      */
     @PatchMapping("/{storeId}")
+    @PreAuthorize("hasRole('OWNER')")
     public StoreResponseDto update(@PathVariable UUID storeId,
                                    Authentication authentication,
                                    @Valid @RequestBody StoreUpdateRequestDto request) {
@@ -91,9 +96,11 @@ public class StoreController {
 
     /**
      * 가게 삭제
-     * - actorUserId는 헤더에서 전달
+     * - OWNER 권한 사용자만 가능
+     * - actorUserId는 인증 객체에서 추출
      */
     @DeleteMapping("/{storeId}")
+    @PreAuthorize("hasRole('OWNER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID storeId,
                        Authentication authentication) {

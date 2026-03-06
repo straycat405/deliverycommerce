@@ -22,13 +22,14 @@ public abstract class BaseEntity {
     private LocalDateTime createdAt;
 
     @CreatedBy
-    @Column(updatable = false)
     private Long createdBy; // 생성자 p_user.user_id
 
     @LastModifiedDate
     @Column
     private LocalDateTime updatedAt;
 
+    // 처음 레코드 생성시에도 기록됨
+    // 만약 원치 않는다면 @PreUpdate로 교체 > 생성시에는 null
     @LastModifiedBy
     @Column
     private Long updatedBy; // 수정자 p_user.user_id

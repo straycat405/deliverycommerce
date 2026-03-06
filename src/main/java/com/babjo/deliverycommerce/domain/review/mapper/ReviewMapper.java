@@ -6,7 +6,7 @@ import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
-import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import org.springframework.stereotype.Component;
 
 @Component

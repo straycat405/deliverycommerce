@@ -14,8 +14,8 @@ import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.user.entity.User;
-import com.babjo.deliverycommerce.user.repository.UserRepository;
+import com.babjo.deliverycommerce.domain.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -168,10 +168,10 @@ public class ReviewService {
 
     /**
      * MANAGER 또는 MASTER 권한 여부 확인
-     * 역할 비교는 UserEnumRole enum 상수를 사용하여 하드코딩 오류를 방지합니다.
+     * UserPrincipal의 role은 "ROLE_MANAGER" 형태이므로 Authority 상수와 비교합니다.
      */
     private boolean isAdminRole(UserPrincipal principal) {
         String role = principal.getRole();
-        return UserEnumRole.MANAGER.name().equals(role) || UserEnumRole.MASTER.name().equals(role);
+        return UserEnumRole.Authority.MANAGER.equals(role) || UserEnumRole.Authority.MASTER.equals(role);
     }
 }

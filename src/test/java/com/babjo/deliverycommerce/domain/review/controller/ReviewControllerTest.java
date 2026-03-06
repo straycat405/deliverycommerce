@@ -51,7 +51,7 @@ class ReviewControllerTest {
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
 
-        customerPrincipal = new UserPrincipal(1L, "testuser", "CUSTOMER");
+        customerPrincipal = new UserPrincipal(1L, "testuser", "ROLE_CUSTOMER");
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                 customerPrincipal, null,
                 List.of(new SimpleGrantedAuthority("ROLE_CUSTOMER"))

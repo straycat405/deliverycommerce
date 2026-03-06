@@ -1,8 +1,8 @@
 package com.babjo.deliverycommerce.domain.review.entity;
 
 import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
-import com.babjo.deliverycommerce.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

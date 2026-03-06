@@ -14,8 +14,8 @@ import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.user.entity.User;
-import com.babjo.deliverycommerce.user.repository.UserRepository;
+import com.babjo.deliverycommerce.domain.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,11 +63,11 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        principal = new UserPrincipal(1L, "testuser", "CUSTOMER");
-        otherPrincipal = new UserPrincipal(2L, "otheruser", "CUSTOMER");
-        managerPrincipal = new UserPrincipal(3L, "manager", "MANAGER");
-        masterPrincipal = new UserPrincipal(4L, "master", "MASTER");
-        ownerPrincipal = new UserPrincipal(5L, "owner", "OWNER");
+        principal = new UserPrincipal(1L, "testuser", "ROLE_CUSTOMER");
+        otherPrincipal = new UserPrincipal(2L, "otheruser", "ROLE_CUSTOMER");
+        managerPrincipal = new UserPrincipal(3L, "manager", "ROLE_MANAGER");
+        masterPrincipal = new UserPrincipal(4L, "master", "ROLE_MASTER");
+        ownerPrincipal = new UserPrincipal(5L, "owner", "ROLE_OWNER");
 
         store = Store.create(1L, "한식", "테스트 식당", "서울시 강남구");
         user = User.createForTest(1L, "testuser", "test@test.com", "테스터", UserEnumRole.CUSTOMER);

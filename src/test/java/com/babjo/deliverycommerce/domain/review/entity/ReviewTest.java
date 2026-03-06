@@ -2,7 +2,7 @@ package com.babjo.deliverycommerce.domain.review.entity;
 
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
-import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

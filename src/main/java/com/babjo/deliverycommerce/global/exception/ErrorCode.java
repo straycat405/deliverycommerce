@@ -62,7 +62,15 @@ public enum ErrorCode {
   
     // ── Store ─────────────────────────────────────────
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
-    STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다.");
+    STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다."),
+
+    // ── Order ─────────────────────────────────────────
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다."),
+    ORDER_ALREADY_DELETED(HttpStatus.GONE, "ORDER_ALREADY_DELETED", "삭제된 주문 내역입니다."),
+    NOT_ORDER_USER(HttpStatus.FORBIDDEN, "NOT_ORDER_USER", "본인의 주문에 대해서만 처리 가능합니다."),
+    INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "INVALID_ORDER_STATUS", "현재 주문 상태에서는 수행할 수 없는 작업입니다."),
+    ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_ACCESS_DENIED", "주문에 대한 접근 권한이 없습니다."),
+    INVALID_COOKING_TIME(HttpStatus.BAD_REQUEST, "INVALID_COOKING_TIME", "올바른 조리 시간을 입력해주세요. ( 1분 이상 )");
 
     private final HttpStatus status;
     private final String code;

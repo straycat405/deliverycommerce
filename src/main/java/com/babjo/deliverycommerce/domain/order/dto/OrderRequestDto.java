@@ -3,7 +3,6 @@ package com.babjo.deliverycommerce.domain.order.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -45,7 +44,7 @@ public class OrderRequestDto {
     @Getter
     @NoArgsConstructor
     public static class AcceptOrder {
-        @Min(value = 5, message = "조리 시간은 최소 5분 이상 입력해야 합니다.")
+        @Min(value = 1, message = "조리 시간은 최소 1분 이상 입력해야 합니다.")
         private Integer cookingMinutes;
     }
 

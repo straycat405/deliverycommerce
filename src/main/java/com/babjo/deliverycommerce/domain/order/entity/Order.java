@@ -1,6 +1,8 @@
 package com.babjo.deliverycommerce.domain.order.entity;
 
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -48,15 +50,21 @@ public class Order extends BaseEntity {
 
     private Long acceptedBy;
 
+    private LocalDateTime acceptedAt;
+
     private Integer cookingMinutes;
 
     private Long preparingStartedBy;
 
+    private LocalDateTime preparingStartedAt;
+
     private Long pickupReadieBy;
+
+    private LocalDateTime pickupReadieAt;
 
     private Long pickupBy;
 
-    private LocalDateTime acceptedAt;
+    private LocalDateTime pickupAt;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> orderItems = new ArrayList<>();
@@ -74,7 +82,9 @@ public class Order extends BaseEntity {
             order.addOrderItem(item);
         }
 
-        order.calculateTotalPrice();
+        order.totalPrice = order.orderItems.stream()
+                .mapToInt(OrderItem::getItemTotal)
+                .sum();
         return order;
 
     }
@@ -83,17 +93,10 @@ public class Order extends BaseEntity {
         this.orderItems.add(orderItem);
         orderItem.setOrder(this);
     }
-    private void calculateTotalPrice(){
-        this.totalPrice = this.orderItems.stream()
-                .mapToInt(OrderItem::getItemTotal)
-                .sum();
-    }
+
 
     // 주문 취소
     public void cancel(Long userId, String reason){
-        if (this.status != OrderStatus.CREATED) {
-            throw new IllegalStateException("취소가 불가능한 상태입니다.");
-        }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
         this.canceledBy = userId;
@@ -102,9 +105,11 @@ public class Order extends BaseEntity {
 
     // 주문 내역 삭제 ( 숨김 )
     public void softDelete(Long userId){
-
+        if(super.isDeleted()){
+            throw new CustomException(ErrorCode.ORDER_ALREADY_DELETED);
+        }
         if(this.status != OrderStatus.PICKED_UP && this.status != OrderStatus.CANCELED){
-            throw new IllegalStateException("취소되거나 완료된 주문 내역만 삭제할 수 있습니다.");
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
         }
         super.delete(userId);
     }
@@ -112,10 +117,10 @@ public class Order extends BaseEntity {
     // 주문 접수
     public void accept(Long ownerId, Integer cookingMinutes){
         if(this.status != OrderStatus.CREATED){
-            throw new IllegalStateException("접수할 수 없는 주문 상태입니다.");
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
         }
         if(cookingMinutes == null || cookingMinutes <= 0){
-            throw new IllegalArgumentException("올바른 조리 시간을 입력해주세요.");
+            throw new CustomException(ErrorCode.INVALID_COOKING_TIME);
         }
 
         this.status = OrderStatus.ACCEPTED;
@@ -126,29 +131,32 @@ public class Order extends BaseEntity {
 
     // state : 조리 시작
     public void startPreparing(Long ownerId) {
-        validateStatus(OrderStatus.ACCEPTED, "조리를 시작할 수 없는 상태입니다. ");
+        validateStatus(OrderStatus.ACCEPTED);
         this.status = OrderStatus.PREPARING;
         this.preparingStartedBy = ownerId;
+        this.preparingStartedAt = LocalDateTime.now();
     }
 
     // state : 조리 완료 및 픽업 대기
     public void readyPickup(Long ownerId){
-        validateStatus(OrderStatus.PREPARING, "조리 시작한 주문만 픽업 대기 상태로 변경할 수 있습니다.");
+        validateStatus(OrderStatus.PREPARING);
         this.status = OrderStatus.PICKUP_READY;
         this.pickupReadieBy = ownerId;
+        this.pickupReadieAt = LocalDateTime.now();
     }
 
     // state : 픽업 완료
     public void completePickup(Long ownerId){
-        validateStatus(OrderStatus.PICKUP_READY, "픽업 대기중인 주문만 픽업 완료 상태로 변경 가능합니다.");
+        validateStatus(OrderStatus.PICKUP_READY);
         this.status = OrderStatus.PICKED_UP;
         this.pickupBy = ownerId;
+        this.pickupAt = LocalDateTime.now();
     }
 
     // state 변경 중복 코드
-    private void validateStatus(OrderStatus status, String message){
+    private void validateStatus(OrderStatus status){
         if(this.status != status){
-            throw new IllegalStateException(message);
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
         }
     }
 

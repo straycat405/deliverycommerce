@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,10 +67,10 @@ public class OrderService {
     // 주문 상세 조회
     public OrderResponseDto getOrderDetails(UUID orderId){
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
 
         if(order.isDeleted()){
-            throw new IllegalStateException("이미 삭제된 주문 내역입니다.");
+            throw new CustomException(ErrorCode.ORDER_ALREADY_DELETED);
         }
         return convertToResponseDto(order);
     }
@@ -77,50 +79,52 @@ public class OrderService {
     // 주문 취소
     @Transactional
     public OrderResponseDto cancelOrder(UUID orderId, Long userId, String reason){
-
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("취소할 주문이 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
         if(!order.getUserId().equals(userId)){
-            throw new IllegalStateException("본인의 주문만 취소 할 수 있습니다.");
+            throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-
+        if(order.getStatus() != OrderStatus.CREATED){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
         order.cancel(userId,reason);
         return convertToResponseDto(order);
-
     }
 
     // 주문 내역 삭제 ( 숨김 )
     @Transactional
     public OrderResponseDto softDeleteOrder(UUID orderId, Long userId){
-        Order order = orderRepository.findByIdAndDeletedAtIsNull(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않거나 이미 삭제된 주문 입니다."));
-        if (!order.getUserId().equals(userId)) {
-            throw new IllegalStateException("본인의 주문 내역만 삭제할 수 있습니다.");
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+        if(!order.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-
+        if(order.isDeleted()){
+            throw new CustomException(ErrorCode.ORDER_ALREADY_DELETED);
+        }
         order.softDelete(userId);
-
         return convertToResponseDto(order);
     }
 
     // 주문 접수
     @Transactional
-    public OrderResponseDto acceptOrder(UUID orderId, Long ownerID, OrderRequestDto.AcceptOrder request){
+    public OrderResponseDto acceptOrder(UUID orderId, Long ownerId, OrderRequestDto.AcceptOrder request){
             Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
-            order.accept(ownerID, request.getCookingMinutes());
+                    .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+            order.accept(ownerId, request.getCookingMinutes());
             return convertToResponseDto(order);
     }
 
+    // 주문 상태 변경
     @Transactional
     public OrderResponseDto updateOrderStatus(UUID orderId,Long ownerId, OrderStatus status){
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
         switch (status){
             case PREPARING -> order.startPreparing(ownerId);
             case PICKUP_READY -> order.readyPickup(ownerId);
             case PICKED_UP -> order.completePickup(ownerId);
-            default -> throw new IllegalArgumentException("잘못된 상태 요청 입니다.");
+            default -> throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
         }
         return convertToResponseDto(order);
     }

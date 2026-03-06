@@ -8,12 +8,13 @@ import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.product.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,10 +39,11 @@ public class ProductController {
 
     @PreAuthorize("permitAll()")
     @GetMapping
-    public ResponseEntity<List<ProductResponseDto>> getProducts(
-            @PathVariable UUID storeId, @RequestParam(required = false) String category, @AuthenticationPrincipal UserPrincipal user) {
+    public ResponseEntity<Page<ProductResponseDto>> getProducts(
+            @PathVariable UUID storeId, @RequestParam(required = false) String category, @AuthenticationPrincipal UserPrincipal user,
+            Pageable pageable) {
 
-        return ResponseEntity.ok(productService.getAll(storeId, category, user));
+        return ResponseEntity.ok(productService.getAll(storeId, category, user, pageable));
     }
 
     /* =========================

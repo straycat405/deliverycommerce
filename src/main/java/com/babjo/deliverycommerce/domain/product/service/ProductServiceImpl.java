@@ -12,6 +12,8 @@ import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -161,37 +163,35 @@ public class ProductServiceImpl implements ProductService {
     // 전체 조회
     @Override
     @Transactional
-    public List<ProductResponseDto> getAll(UUID storeId, String categoryOrNull, UserPrincipal user) {
+    public Page<ProductResponseDto> getAll(UUID storeId, String categoryOrNull, UserPrincipal user, Pageable pageable) {
 
         Boolean canViewHidden = canViewHiddenProduct(storeId, user);
 
-        List<Product> products;
+        Page<Product> products;
 
         if (categoryOrNull != null && !categoryOrNull.isBlank()) {
             // 카테고리로 조회
 
             if (canViewHidden) {
                 products = productRespository
-                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNull(storeId, categoryOrNull);
+                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNull(storeId, categoryOrNull, pageable);
             } else {
                 products = productRespository
-                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNullAndProductHideFalse(storeId, categoryOrNull);
+                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNullAndProductHideFalse(storeId, categoryOrNull, pageable);
             }
 
         } else {
             // 전체 조회
             if (canViewHidden) {
                 products = productRespository
-                        .findAllByStore_StoreIdAndDeletedAtIsNull(storeId);
+                        .findAllByStore_StoreIdAndDeletedAtIsNull(storeId, pageable);
             } else {
                 products = productRespository
-                        .findAllByStore_StoreIdAndProductHideFalseAndDeletedAtIsNull(storeId);
+                        .findAllByStore_StoreIdAndProductHideFalseAndDeletedAtIsNull(storeId, pageable);
             }
         }
 
-        return products.stream()
-                .map(ProductResponseDto::from)
-                .collect(Collectors.toList());
+        return products.map(ProductResponseDto::from);
     }
 
     /* =========================

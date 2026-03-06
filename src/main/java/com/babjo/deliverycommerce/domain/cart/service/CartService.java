@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.cart.service;
 
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemAddRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemResponseDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
@@ -7,6 +8,8 @@ import com.babjo.deliverycommerce.domain.cart.entity.Cart;
 import com.babjo.deliverycommerce.domain.cart.entity.CartItem;
 import com.babjo.deliverycommerce.domain.cart.repository.CartItemRepository;
 import com.babjo.deliverycommerce.domain.cart.repository.CartRepository;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -23,10 +27,12 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final ProductRespository productRespository;
 
-    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository) {
+    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRespository productRespository) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
+        this.productRespository = productRespository;
     }
 
     public CartResponseDto getMyCart(Long userId) {
@@ -120,6 +126,45 @@ public class CartService {
 
         log.info("장바구니 비우기 완료: userId={}, cartId={}, deletedItemCount={}", userId, cart.getCartId(), cartItems.size());
     }
+
+    @Transactional
+    public CartResponseDto addItem(Long userId, CartItemAddRequestDto request) {
+        UUID productId = request.getProductId();
+        Integer quantity = Optional.ofNullable(request.getQuantity()).orElse(1);
+
+        log.info("장바구니 상품 추가 요청: userId={}, productId={}, quantity={}", userId, productId, quantity);
+        validateQuantity(quantity);
+
+        /*상품 존재/ 삭제 여부 확인 (deletedAt is null)*/
+        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        /*내 장바구니 조회(없으면  생성)*/
+        Cart cart = cartRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .orElseGet(() -> {
+                    Cart newCart = Cart.create(userId, null);
+                    Cart saved = cartRepository.save(newCart);
+                    log.info("장바구니 신규 생성: userId={}, cartId={}", userId, saved.getCartId());
+                    return saved;
+                });
+
+        /*같은 상품이 이미 담겨 있으면 수량 증가, 없으면 생성*/
+        CartItem cartItem = cartItemRepository.findByCartIdAndProductIdAndDeletedAtIsNull(cart.getCartId(), productId).orElse(null);
+
+        if (cartItem != null) {
+            cartItem.increaseQuantity(quantity);
+            log.info("장바구니 상품 수량 증가: userId={}, cartId={}, productId={}, newQuantity={}", userId, cart.getCartId(), productId, quantity);
+
+        } else {
+            CartItem newItem = CartItem.create(cart.getCartId(), productId, quantity);
+            cartItemRepository.save(newItem);
+            log.info("장바구니 상품 신규 추가: userId={}, cartId={}, productId={}, quantity={}", userId, cart.getCartId(), productId, quantity);
+        }
+
+        /*최신 장바구니 반환*/
+        return buildCartResponse(cart);
+    }
+
 
     /*내 장바구니인지 확인*/
     private void validateCartOwner(Cart cart, Long userId) {

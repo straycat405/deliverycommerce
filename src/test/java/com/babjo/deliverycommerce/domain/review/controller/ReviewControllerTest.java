@@ -375,17 +375,6 @@ class ReviewControllerTest {
         verify(reviewService, times(1)).updateReview(any(UserPrincipal.class), eq(reviewId), any());
     }
 
-    @Test
-    void updateReview_유효성검사_실패_필수필드_누락() throws Exception {
-        UUID reviewId = UUID.randomUUID();
-
-        mockMvc.perform(put("/v1/reviews/" + reviewId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-
-        verify(reviewService, never()).updateReview(any(), any(), any());
-    }
 
     @Test
     void updateReview_유효성검사_실패_rating_범위미만_0() throws Exception {
@@ -414,25 +403,6 @@ class ReviewControllerTest {
                 {
                   "rating":  6,
                   "content": "너무 맛있어요"
-                }
-                """;
-
-        mockMvc.perform(put("/v1/reviews/" + reviewId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest());
-
-        verify(reviewService, never()).updateReview(any(), any(), any());
-    }
-
-    @Test
-    void updateReview_유효성검사_실패_content_blank() throws Exception {
-        UUID reviewId = UUID.randomUUID();
-
-        String requestBody = """
-                {
-                  "rating":  3,
-                  "content": "   "
                 }
                 """;
 

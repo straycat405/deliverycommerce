@@ -156,9 +156,10 @@ public class ReviewService {
         review.updateReview(updateRequest.getRating(), updateRequest.getContent());
 
         // 별점이 변경된 경우에만 Store 통계 갱신
-        if (oldRating != updateRequest.getRating()) {
+        Integer newRating = updateRequest.getRating();
+        if (newRating != null && oldRating != newRating) {
             Store store = review.getStore();
-            store.updateReviewRating(oldRating, updateRequest.getRating());
+            store.updateReviewRating(oldRating, newRating);
             storeRepository.save(store);
         }
 

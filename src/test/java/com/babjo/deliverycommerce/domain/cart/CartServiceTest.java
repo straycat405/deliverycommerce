@@ -102,7 +102,7 @@ public class CartServiceTest {
         @Test
         @DisplayName("정상적으로 장바구니 항목 수량을 수정")
         void 장바구니_항목_수량_수정() throws Exception {
-            
+
             //given
             Long userId = 1L;
             UUID storeId = UUID.randomUUID();
@@ -192,6 +192,79 @@ public class CartServiceTest {
             quantityField.set(request, quantity);
 
             return request;
+        }
+    }
+
+    @Nested
+    @DisplayName("장바구니 항목 삭제")
+    class DeleteItem {
+
+        @Test
+        @DisplayName("정상적으로 장바구니 항목을 삭제(soft delete)")
+        void 장바구니_항목_삭제() {
+            //given
+            Long userId = 1L;
+            UUID storeId = UUID.randomUUID();
+            UUID productId = UUID.randomUUID();
+
+            Cart cart = Cart.create(userId, storeId);
+            CartItem cartItem = CartItem.create(cart.getCartId(), productId, 2);
+
+            given(cartItemRepository.findByCartItemIdAndDeletedAtIsNull(cartItem.getCartItemId())).willReturn(Optional.of(cartItem));
+
+            given(cartRepository.findByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(Optional.of(cart));
+
+            /*마지막 항목 삭제 상황(남은 항목 없음)*/
+            given(cartItemRepository.existsByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(false);
+
+            //when
+            cartService.deleteItem(userId, cartItem.getCartItemId());
+
+            //then
+            assertThat(cartItem.isDeleted()).isTrue();
+            assertThat(cartItem.getDeletedBy()).isEqualTo(userId);
+            assertThat(cart.getStoreId()).isNull(); // 마지막 항목이면 초기화
+
+
+        }
+
+        @Test
+        @DisplayName("삭제할 장바구니 항목이 없으면 CART_ITEM_NOT_FOUND 예외")
+        void 장바구니_항목_없으면_예외() {
+            //given
+            Long userId = 1L;
+            UUID cartItemId = UUID.randomUUID();
+
+            given(cartItemRepository.findByCartItemIdAndDeletedAtIsNull(cartItemId)).willReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> cartService.deleteItem(userId, cartItemId))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CART_ITEM_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("내 장바구니 항목이 아니면 CART_FORBIDDEN 예외")
+        void 내_장바구니_항목_아니면_예외() {
+            //given
+            Long loginUserId = 1L;
+            Long ownerUserId = 2L;
+            UUID storeId = UUID.randomUUID();
+            UUID productId = UUID.randomUUID();
+
+            Cart cart = Cart.create(ownerUserId, storeId);
+            CartItem cartItem = CartItem.create(cart.getCartId(), productId, 2);
+
+            given(cartItemRepository.findByCartItemIdAndDeletedAtIsNull(cartItem.getCartItemId())).willReturn(Optional.of(cartItem));
+
+            given(cartRepository.findByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(Optional.of(cart));
+
+            //when & then
+            assertThatThrownBy(() -> cartService.deleteItem(loginUserId, cartItem.getCartItemId()))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CART_FORBIDDEN);
         }
     }
 }

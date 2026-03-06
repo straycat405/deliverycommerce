@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.product.service;
 
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -7,7 +8,6 @@ import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
-import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService {
 
-    private final ProductRespository productRespository;
+    private final ProductRepository productRepository;
     private final AiDescriptionService aiDescriptionService;
 
     // 상품 생성
@@ -41,7 +41,7 @@ public class ProductServiceImpl implements ProductService {
                 .useAiDescription(request.getUseAiDescription())
                 .build();
 
-        productRespository.save(product);
+        productRepository.save(product);
 
         return ProductResponseDto.from(product);
     }
@@ -70,9 +70,9 @@ public class ProductServiceImpl implements ProductService {
 
         // CUSTOMER는 숨김 제외
         if (role.equals("CUSTOMER")) {
-            products = productRespository.findAllByProductHideFalseAndDeletedAtIsNull();
+            products = productRepository.findAllByProductHideFalseAndDeletedAtIsNull();
         } else {    // OWNER 이상은 숨김 포함
-            products = productRespository.findAllByDeletedAtIsNull();
+            products = productRepository.findAllByDeletedAtIsNull();
         }
 
         return products.stream()
@@ -88,9 +88,9 @@ public class ProductServiceImpl implements ProductService {
         List<Product> products;
 
         if (role.equals("CUSTOMER")) {
-            products = productRespository.findAllByProductCategoryAndDeletedAtIsNullAndProductHideFalse(category);
+            products = productRepository.findAllByProductCategoryAndDeletedAtIsNullAndProductHideFalse(category);
         } else {
-            products = productRespository.findAllByProductCategoryAndDeletedAtIsNull(category);
+            products = productRepository.findAllByProductCategoryAndDeletedAtIsNull(category);
         }
 
         return products.stream()
@@ -158,7 +158,7 @@ public class ProductServiceImpl implements ProductService {
 
     private Product getActiveProduct(UUID productId) {
 
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
+        Product product = productRepository.findByProductIdAndDeletedAtIsNull(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
         if(product.getDeletedAt() != null) {

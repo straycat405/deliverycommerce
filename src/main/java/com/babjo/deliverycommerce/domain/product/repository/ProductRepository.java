@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProductRespository extends JpaRepository<Product, UUID> {
+public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     // Store 연결되면 findAllByStore_StoreIdAndDeletedAtIsNull() 형태로 확장
 

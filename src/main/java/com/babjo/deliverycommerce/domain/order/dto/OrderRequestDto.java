@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.domain.order.dto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -13,7 +14,7 @@ public class OrderRequestDto {
     @Getter
     @NoArgsConstructor
     public static class CreateOrder{
-        @NotBlank(message = "가게 ID는 필수입니다.")
+        @NotNull(message = "가게 ID는 필수입니다.")
         private UUID storeId;
 
         @NotBlank(message = "배송지는 필수입니다.")
@@ -28,7 +29,7 @@ public class OrderRequestDto {
     @Getter
     @NoArgsConstructor
     public static class OrderItemRequest{
-        @NotBlank(message = "상품 ID는 필수입니다.")
+        @NotNull(message = "상품 ID는 필수입니다.")
         private UUID productId;
 
         @NotBlank(message = "메뉴 이름은 필수입니다.")

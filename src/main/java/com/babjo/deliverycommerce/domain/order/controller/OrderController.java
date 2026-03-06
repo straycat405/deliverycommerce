@@ -5,6 +5,7 @@ import com.babjo.deliverycommerce.domain.order.dto.OrderResponseDto;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.service.OrderService;
 import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
+import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -22,14 +24,17 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
+    private final CurrentUserResolver currentUserResolver;
+
 
     // 주문 생성 POST /v1/orders
     @PostMapping
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderDetail>> createOrder(
-            @RequestHeader(name = "UserId") Long userId,
+            Authentication authentication,
             @Valid
             @RequestBody OrderRequestDto.CreateOrder request
     ){
+        Long userId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderDetail data = orderService.createOrder(userId, request);
         return CommonResponse.created("주문이 성공적으로 생성되었습니다.",data);
     }
@@ -46,11 +51,11 @@ public class OrderController {
     // 사용자의 주문 내역 조회
     @GetMapping
     public ResponseEntity<CommonResponse<Page<OrderResponseDto.OrderList>>> getMyOrders(
-            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
-            @RequestHeader(name = "UserId") Long userId,
+            Authentication authentication,
             // default size 10
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
-            ){
+    ){
+        Long userId = currentUserResolver.getUserId(authentication);
         Page<OrderResponseDto.OrderList> data = orderService.getUserOders(userId, pageable);
         return CommonResponse.ok(data);
     }
@@ -58,11 +63,11 @@ public class OrderController {
     // 주문 취소 PATCH /v1/orders/{orderId}/cancel
     @PatchMapping("/{orderId}/cancel")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> cancelOrder(
-            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
-            @RequestHeader(name = "UserId")Long userId,
+            Authentication authentication,
             @PathVariable UUID orderId,
             @RequestParam String reason
     ){
+        Long userId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.cancelOrder(orderId,userId, reason);
         return CommonResponse.ok("주문이 취소 되었습니다.",data);
     }
@@ -70,10 +75,10 @@ public class OrderController {
     // 주문 내역 삭제 ( 숨김 )
     @DeleteMapping("/{orderId}")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> deleteOrder(
-            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
-            @RequestHeader(name = "UserId") Long userId,
+            Authentication authentication,
             @PathVariable UUID orderId
     ){
+        Long userId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.softDeleteOrder(orderId, userId);
         return CommonResponse.ok("주문 내역이 삭제되었습니다.", data);
     }
@@ -83,9 +88,9 @@ public class OrderController {
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> acceptOrder(
             @PathVariable UUID orderId,
             @RequestBody OrderRequestDto.AcceptOrder request,
-            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
-            @RequestHeader(name = "OwnerId") Long ownerId
+            Authentication authentication
     ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.acceptOrder(orderId, ownerId, request);
         return CommonResponse.ok("주문을 접수하였습니다.",data);
     }
@@ -94,9 +99,9 @@ public class OrderController {
     @PatchMapping("/{orderId}/preparing")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> startPreparing(
             @PathVariable UUID orderId,
-            // TODO : spring security 도입 시 @AuthenticationPrincipal 변경 예정
-            @RequestHeader(name = "OwnerId") Long ownerId
+            Authentication authentication
     ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PREPARING);
         return CommonResponse.ok("조리를 시작합니다", data);
     }
@@ -105,20 +110,22 @@ public class OrderController {
     @PatchMapping("/{orderId}/pickup-ready")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> readyPickup(
             @PathVariable UUID orderId,
-            @RequestHeader(name = "OwnerId") Long ownerId
+            Authentication authentication
     ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PICKUP_READY);
-        return CommonResponse.ok(data);
+        return CommonResponse.ok("조리가 완료되어 픽업 대기 상태로 변경 되었습니다.",data);
     }
 
     // 픽업 완료
     @PatchMapping("/{orderId}/pickup")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> completePickup(
             @PathVariable UUID orderId,
-            @RequestHeader(name = "OwnerId") Long ownerId
+            Authentication authentication
     ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
         OrderResponseDto.OrderAction data = orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PICKED_UP);
-        return CommonResponse.ok(data);
+        return CommonResponse.ok("픽업이 완료 되었습니다.",data);
     }
 
 }

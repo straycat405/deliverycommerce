@@ -11,9 +11,9 @@ import java.util.List;
 
 /**
  * JWT 토큰에서 userId를, Redis UserAuthCache에서 username과 role을 가져와 인증 객체로 사용합니다.
- * * JwtAuthorizationFilter에서 토큰 검증 성공 시 SecurityContext에 저장되며,
- * 컨트롤러에서 @AuthenticationPrincipal로 주입받아 사용합니다.
- * *
+ * JwtAuthorizationFilter에서 토큰 검증 성공 시 SecurityContext에 저장
+ * 본 프로젝트에서는 직접 사용보단, CurrentUserResolver를 통해 userId를 컨트롤러에서 받아서 사용하시면 됩니다.
+ *
  * 사용예시
  * @GetMapping("/my-info")
  * public ResponseEntity<?> getMyInfo(

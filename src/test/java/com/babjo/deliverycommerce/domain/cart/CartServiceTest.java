@@ -267,4 +267,75 @@ public class CartServiceTest {
                     .isEqualTo(ErrorCode.CART_FORBIDDEN);
         }
     }
+
+    @Nested
+    @DisplayName("장바구니 비우기")
+    class ClearCart {
+
+        @Test
+        @DisplayName("장바구니가 없으면 예외 없이 종료")
+        void 장바구니_없으면_종료() {
+            //given
+            Long userId = 1L;
+
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+            //when
+            cartService.clearCart(userId);
+
+            //then
+
+        }
+
+        @Test
+        @DisplayName("장바구니가 있으면 모든 항목을 soft delete하고 초기화")
+        void 모든_항목_삭제하고_storeId_초기화() {
+            //given
+            Long userId = 1L;
+            UUID storeId = UUID.randomUUID();
+            UUID productId1 = UUID.randomUUID();
+            UUID productId2 = UUID.randomUUID();
+
+            Cart cart = Cart.create(userId, storeId);
+            CartItem cartItem1 = CartItem.create(cart.getCartId(), productId1, 2);
+            CartItem cartItem2 = CartItem.create(cart.getCartId(), productId2, 1);
+
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));
+
+            given(cartItemRepository.findAllByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(List.of(cartItem1, cartItem2));
+
+            //when
+            cartService.clearCart(userId);
+
+            //then
+            assertThat(cartItem1.isDeleted()).isTrue();
+            assertThat(cartItem1.getDeletedBy()).isEqualTo(userId);
+
+            assertThat(cartItem2.isDeleted()).isTrue();
+            assertThat(cartItem2.getDeletedBy()).isEqualTo(userId);
+
+            assertThat(cart.getStoreId()).isNull();
+
+        }
+
+        @Test
+        @DisplayName("장바구니 항목이 없어도 storeId 초기화")
+        void 항목이_없어도_초기화() {
+            //given
+            Long userId = 1L;
+            UUID storeId = UUID.randomUUID();
+
+            Cart cart = Cart.create(userId, storeId);
+
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));
+
+            given(cartItemRepository.findAllByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(List.of());
+
+            //when
+            cartService.clearCart(userId);
+
+            //then
+            assertThat(cart.getStoreId()).isNull();
+        }
+    }
 }

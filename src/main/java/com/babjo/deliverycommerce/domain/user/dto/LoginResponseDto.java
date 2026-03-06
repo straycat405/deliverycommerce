@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.user.dto;
+package com.babjo.deliverycommerce.domain.user.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;

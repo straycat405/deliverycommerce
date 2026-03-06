@@ -51,7 +51,7 @@ import com.babjo.deliverycommerce.global.jwt.JwtAuthorizationFilter;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
 import com.babjo.deliverycommerce.global.redis.UserAuthCacheManager;
-import com.babjo.deliverycommerce.user.repository.UserRepository;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

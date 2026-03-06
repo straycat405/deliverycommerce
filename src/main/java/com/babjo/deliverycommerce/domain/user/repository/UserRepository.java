@@ -1,6 +1,6 @@
-package com.babjo.deliverycommerce.user.repository;
+package com.babjo.deliverycommerce.domain.user.repository;
 
-import com.babjo.deliverycommerce.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

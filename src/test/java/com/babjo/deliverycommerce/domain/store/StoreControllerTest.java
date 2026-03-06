@@ -11,7 +11,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,15 +25,24 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StoreController.class)
+@Import(StoreControllerTest.MethodSecurityTestConfig.class)
 public class StoreControllerTest {
+
+    @TestConfiguration
+    @EnableMethodSecurity
+    static class MethodSecurityTestConfig {
+
+    }
 
     @Autowired
     private MockMvc mockMvc;
@@ -156,6 +168,27 @@ public class StoreControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "CUSTOMER")
+    @DisplayName("CUSTOMER 권한으로 가게 생성 요청 시 403 Forbidden을 반환")
+    void CUSTOMER_권한으로_가게_생성() throws Exception {
+        String requestBody = """
+                {
+                    "category": "한식",
+                    "name": "한식당",
+                    "address": "서울시 강남구"
+                }
+                """;
+
+        mockMvc.perform(post("/v1/stores")
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(requestBody))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(currentUserResolver, storeService);
+    }
+
+    @Test
     @WithMockUser(roles = "OWNER")
     @DisplayName("가게 수정 API 호출 시 수정된 가게 정보를 반환")
     void updateStore_success() throws Exception {
@@ -203,6 +236,29 @@ public class StoreControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = "CUSTOMER")
+    @DisplayName("CUSTOMER 권한으로 가게 수정 요청 시 403 Forbidden을 반환")
+    void CUSTOMER_권한으로_가게_수정() throws Exception {
+        UUID storeId = UUID.randomUUID();
+
+        String requestBody = """
+                {
+                    "category": "치킨",
+                    "name": "치킨집",
+                    "address": "서울시 서초구"
+                }
+                """;
+
+        mockMvc.perform(patch("/v1/stores/{storeId}", storeId)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(requestBody))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(currentUserResolver, storeService);
+    }
+
+    @Test
     @WithMockUser(roles = "OWNER")
     @DisplayName("가게 삭제 API 호출 시 204 No Content를 반환")
     void deleteStore_success() throws Exception {
@@ -217,5 +273,18 @@ public class StoreControllerTest {
         mockMvc.perform(delete("/v1/stores/{storeId}", storeId)
                         .with(csrf()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @WithMockUser(roles = "CUSTOMER")
+    @DisplayName("CUSTOMER 권한으로 가게 삭제 요청 시 403 Forbidden을 반환")
+    void CUSTOMER_권한으로_가게_삭제() throws Exception {
+        UUID storeId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/v1/stores/{storeId}", storeId)
+                        .with(csrf()))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(currentUserResolver, storeService);
     }
 }

@@ -69,4 +69,17 @@ public class CartController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping
+    public ResponseEntity<Void> clearCart(Authentication authentication) {
+        Long userId = currentUserResolver.getUserId(authentication);
+
+        log.info("장바구니 비우기 API 요청: userId={}", userId);
+
+        cartService.clearCart(userId);
+
+        log.info("장바구니 비우기 API 완료: userId={}", userId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

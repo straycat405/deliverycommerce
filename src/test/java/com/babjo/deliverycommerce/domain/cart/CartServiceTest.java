@@ -2,7 +2,6 @@ package com.babjo.deliverycommerce.domain.cart;
 
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemAddRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
-import com.babjo.deliverycommerce.domain.cart.dto.CartItemResponseDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
 import com.babjo.deliverycommerce.domain.cart.entity.Cart;
 import com.babjo.deliverycommerce.domain.cart.entity.CartItem;
@@ -10,7 +9,7 @@ import com.babjo.deliverycommerce.domain.cart.repository.CartItemRepository;
 import com.babjo.deliverycommerce.domain.cart.repository.CartRepository;
 import com.babjo.deliverycommerce.domain.cart.service.CartService;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
-import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +25,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -44,7 +44,7 @@ public class CartServiceTest {
     private CartItemRepository cartItemRepository;
 
     @Mock
-    private ProductRespository productRespository;
+    private ProductRepository productRepository;
 
     @InjectMocks
     private CartService cartService;
@@ -363,7 +363,7 @@ public class CartServiceTest {
 
             CartItemAddRequestDto request = 상품추가요청(productId, 2);
 
-            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.empty());
+            given(productRepository.findById(productId)).willReturn(Optional.empty());
 
             //when & then
             assertThatThrownBy(() -> cartService.addItem(userId, request))
@@ -384,7 +384,7 @@ public class CartServiceTest {
 
             //상품 존재
             Product product = mock(Product.class);
-            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+            given(productRepository.findById(productId)).willReturn(Optional.of(product));
 
             // 장바구니 없음
             given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
@@ -429,7 +429,7 @@ public class CartServiceTest {
 
             // 상품 존재
             Product product = mock(Product.class);
-            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+            given(productRepository.findById(productId)).willReturn(Optional.of(product));
 
             // 장바구니 존재
             Cart cart = Cart.create(userId, storeId);
@@ -462,7 +462,7 @@ public class CartServiceTest {
             CartItemAddRequestDto request = 상품추가요청(productId, null);
 
             Product product = mock(Product.class);
-            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+            given(productRepository.findById(productId)).willReturn(Optional.of(product));
 
             Cart cart = Cart.create(userId, null);
             given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));

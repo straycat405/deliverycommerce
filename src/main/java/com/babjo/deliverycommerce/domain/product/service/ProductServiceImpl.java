@@ -9,7 +9,7 @@ import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
-import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -17,9 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService {
 
-    private final ProductRespository productRespository;
+    private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
     private final AiDescriptionService aiDescriptionService;
 
@@ -62,7 +60,7 @@ public class ProductServiceImpl implements ProductService {
                 .useAiDescription(request.getUseAiDescription())
                 .build();
 
-        productRespository.save(product);
+        productRepository.save(product);
 
         return ProductResponseDto.from(product);
     }
@@ -173,20 +171,20 @@ public class ProductServiceImpl implements ProductService {
             // 카테고리로 조회
 
             if (canViewHidden) {
-                products = productRespository
+                products = productRepository
                         .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNull(storeId, categoryOrNull, pageable);
             } else {
-                products = productRespository
+                products = productRepository
                         .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNullAndProductHideFalse(storeId, categoryOrNull, pageable);
             }
 
         } else {
             // 전체 조회
             if (canViewHidden) {
-                products = productRespository
+                products = productRepository
                         .findAllByStore_StoreIdAndDeletedAtIsNull(storeId, pageable);
             } else {
-                products = productRespository
+                products = productRepository
                         .findAllByStore_StoreIdAndProductHideFalseAndDeletedAtIsNull(storeId, pageable);
             }
         }
@@ -200,14 +198,8 @@ public class ProductServiceImpl implements ProductService {
 
     private Product getActiveProduct(UUID storeId, UUID productId) {
 
-        Product product = productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId)
+        return productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        if(product.getDeletedAt() != null) {
-            throw new CustomException(ErrorCode.PRODUCT_DELETED);
-        }
-
-        return product;
     }
 
     private Store getActiveStore(UUID storeId) {

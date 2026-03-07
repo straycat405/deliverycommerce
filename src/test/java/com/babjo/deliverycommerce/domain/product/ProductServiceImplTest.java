@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.product;
 
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.domain.product.service.AiDescriptionService;
 import com.babjo.deliverycommerce.domain.product.service.ProductServiceImpl;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
@@ -10,7 +11,6 @@ import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
-import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,7 +30,7 @@ import static org.mockito.Mockito.*;
 class ProductServiceImplTest {
 
     @Mock
-    private ProductRespository productRespository;
+    private ProductRepository productRepository;
 
     @Mock
     private StoreRepository storeRepository;
@@ -71,7 +71,7 @@ class ProductServiceImplTest {
         ProductResponseDto response = productService.create(storeId, request, user);
 
         // then
-        verify(productRespository, times(1)).save(any(Product.class));
+        verify(productRepository, times(1)).save(any(Product.class));
         assertThat(response.getName()).isEqualTo("알리오올리오");
         assertThat(response.getPrice()).isEqualTo(12000);
     }
@@ -80,7 +80,7 @@ class ProductServiceImplTest {
     @Test
     void getProduct_notFound() {
         // given
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.empty());
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -109,7 +109,7 @@ class ProductServiceImplTest {
 
         product.hide();
 
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -142,7 +142,7 @@ class ProductServiceImplTest {
         // 현재 서비스의 getActiveProduct()는 findByProductIdAndDeletedAtIsNull로 조회해서
         // 삭제된 상품은 보통 Optional.empty가 되어야 자연스러움.
         // 하지만 지금 코드에는 deletedAt 체크도 있으니 테스트에서 해당 흐름을 강제로 태우려면 Optional.of(...)로 준다.
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -170,7 +170,7 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -204,7 +204,7 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -235,7 +235,7 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -264,7 +264,7 @@ class ProductServiceImplTest {
                 .useAiDescription(false)
                 .build();
 
-        when(productRespository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
                 .thenReturn(Optional.of(product));
         when(aiDescriptionService.generateProductDescription("트러플 크림 파스타", "트러플 향"))
                 .thenReturn("트러플 향 가득한 부드러운 크림 파스타!");

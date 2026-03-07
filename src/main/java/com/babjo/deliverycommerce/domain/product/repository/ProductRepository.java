@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProductRespository extends JpaRepository<Product, UUID> {
+public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     // 단건 조회(삭제 제외)
     Optional<Product> findByProductIdAndStore_StoreIdAndDeletedAtIsNull(UUID storeId, UUID productId);

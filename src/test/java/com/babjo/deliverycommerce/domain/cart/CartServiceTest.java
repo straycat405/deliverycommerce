@@ -1,12 +1,16 @@
 package com.babjo.deliverycommerce.domain.cart;
 
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemAddRequestDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartItemQuantityUpdateRequestDto;
+import com.babjo.deliverycommerce.domain.cart.dto.CartItemResponseDto;
 import com.babjo.deliverycommerce.domain.cart.dto.CartResponseDto;
 import com.babjo.deliverycommerce.domain.cart.entity.Cart;
 import com.babjo.deliverycommerce.domain.cart.entity.CartItem;
 import com.babjo.deliverycommerce.domain.cart.repository.CartItemRepository;
 import com.babjo.deliverycommerce.domain.cart.repository.CartRepository;
 import com.babjo.deliverycommerce.domain.cart.service.CartService;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +27,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +42,9 @@ public class CartServiceTest {
 
     @Mock
     private CartItemRepository cartItemRepository;
+
+    @Mock
+    private ProductRespository productRespository;
 
     @InjectMocks
     private CartService cartService;
@@ -336,6 +347,152 @@ public class CartServiceTest {
 
             //then
             assertThat(cart.getStoreId()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("장바구니 상품 추가")
+    class AddItem {
+
+        @Test
+        @DisplayName("상품이 존재하지 않으면 PRODUCT_NOT_FOUND 예외")
+        void 상품_없으면_PRODUCT_NOT_FOUND() throws Exception {
+            //given
+            Long userId = 1L;
+            UUID productId = UUID.randomUUID();
+
+            CartItemAddRequestDto request = 상품추가요청(productId, 2);
+
+            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.empty());
+
+            //when & then
+            assertThatThrownBy(() -> cartService.addItem(userId, request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("장바구니가 없으면 새로 생성한 뒤 상품을 추가한다")
+        void 장바구니_없으면_생성_추가() throws Exception {
+            //given
+            Long userId = 1L;
+            UUID productId = UUID.randomUUID();
+            UUID cartId = UUID.randomUUID();
+
+            CartItemAddRequestDto request = 상품추가요청(productId, 2);
+
+            //상품 존재
+            Product product = mock(Product.class);
+            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+
+            // 장바구니 없음
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+            // 장바구니 생성
+            Cart savedCart = Cart.create(userId, null);
+            given(cartRepository.save(any(Cart.class))).willReturn(savedCart);
+
+            // 기존 cartItem 없음
+            given(cartItemRepository.findByCartIdAndProductIdAndDeletedAtIsNull(savedCart.getCartId(), productId)).willReturn(Optional.empty());
+
+            // buildCartResponse -> 다시 조회할 수 있으니 결과용
+            CartItem newItem = CartItem.create(savedCart.getCartId(), productId, 2);
+            given(cartItemRepository.findAllByCartIdAndDeletedAtIsNull(savedCart.getCartId())).willReturn(List.of(newItem));
+
+            //when
+            CartResponseDto result = cartService.addItem(userId, request);
+
+            //then
+            assertThat(result).isNotNull();
+            assertThat(result.getCartId()).isEqualTo(savedCart.getCartId());
+            assertThat(result.getItems()).hasSize(1);
+            assertThat(result.getItems().get(0).getProductId()).isEqualTo(productId);
+            assertThat(result.getItems().get(0).getQuantity()).isEqualTo(2);
+
+            // 새 cartItem 저장이 호출되었는지 확인
+            then(cartItemRepository).should().save(any(CartItem.class));
+            // cart 생성 호출 확인
+            then(cartRepository).should().save(any(Cart.class));
+
+        }
+
+        @Test
+        @DisplayName("이미 담긴 상품이면 CartItem 수량 증가")
+        void 수량증가() throws Exception {
+            // given
+            Long userId = 1L;
+            UUID productId = UUID.randomUUID();
+            UUID storeId = UUID.randomUUID();
+
+            CartItemAddRequestDto request = 상품추가요청(productId, 3);
+
+            // 상품 존재
+            Product product = mock(Product.class);
+            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+
+            // 장바구니 존재
+            Cart cart = Cart.create(userId, storeId);
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));
+
+            // cartItem 존재(수량 = 2)
+            CartItem existingItem = CartItem.create(cart.getCartId(), productId, 2);
+            given(cartItemRepository.findByCartIdAndProductIdAndDeletedAtIsNull(cart.getCartId(), productId)).willReturn(Optional.of(existingItem));
+
+            // buildCartResponse에서 조회될 리스트 증가된 기존 아이템
+            given(cartItemRepository.findAllByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(List.of(existingItem));
+
+            // when
+            CartResponseDto result = cartService.addItem(userId, request);
+
+            // then
+            assertThat(existingItem.getQuantity()).isEqualTo(5); // 2 + 3
+            assertThat(result.getItems().get(0).getQuantity()).isEqualTo(5);
+
+            then(cartItemRepository).should(never()).save(any(CartItem.class));
+        }
+
+        @Test
+        @DisplayName("quantity가 null이면 기본값으로 처리")
+        void quantity가_null_1처리() throws Exception {
+            // given
+            Long userId = 1L;
+            UUID productId = UUID.randomUUID();
+
+            CartItemAddRequestDto request = 상품추가요청(productId, null);
+
+            Product product = mock(Product.class);
+            given(productRespository.findByProductIdAndDeletedAtIsNull(productId)).willReturn(Optional.of(product));
+
+            Cart cart = Cart.create(userId, null);
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));
+
+            given(cartItemRepository.findByCartIdAndProductIdAndDeletedAtIsNull(cart.getCartId(), productId)).willReturn(Optional.empty());
+
+            CartItem newItem = CartItem.create(cart.getCartId(), productId, 1);
+            given(cartItemRepository.findAllByCartIdAndDeletedAtIsNull(cart.getCartId())).willReturn(List.of(newItem));
+
+            // when
+            CartResponseDto result = cartService.addItem(userId, request);
+
+            //then
+            assertThat(result.getItems()).hasSize(1);
+            assertThat(result.getItems().get(0).getQuantity()).isEqualTo(1);
+
+        }
+
+        private CartItemAddRequestDto 상품추가요청(UUID productId, Integer quantity) throws Exception {
+            CartItemAddRequestDto request = new CartItemAddRequestDto();
+
+            Field productIdField = CartItemAddRequestDto.class.getDeclaredField("productId");
+            productIdField.setAccessible(true);
+            productIdField.set(request, productId);
+
+            Field quantityField = CartItemAddRequestDto.class.getDeclaredField("quantity");
+            quantityField.setAccessible(true);
+            quantityField.set(request, quantity);
+
+            return request;
         }
     }
 }

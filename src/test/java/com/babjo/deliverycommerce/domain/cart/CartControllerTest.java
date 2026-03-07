@@ -228,4 +228,51 @@ public class CartControllerTest {
         // then: 컨트롤러가 서비스 메서드를 실제로 호출했는지 확인(선택이지만 강력 추천)
         then(cartService).should().addItem(eq(1L), any(CartItemAddRequestDto.class));
     }
+
+    @Test
+    @WithMockUser
+    @DisplayName("productId가 없으면 400 Bad Request를 반환한다")
+    void productId가_없으면_400을_반환한다() throws Exception {
+        // given
+        String requestBody = """
+            {
+              "quantity": 2
+            }
+            """;
+
+        given(currentUserResolver.getUserId(any(Authentication.class)))
+                .willReturn(1L);
+
+        // when & then
+        mockMvc.perform(post("/v1/cart/items")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("quantity가 1 미만이면 400 Bad Request를 반환한다")
+    void quantity가_1_미만이면_400을_반환한다() throws Exception {
+        // given
+        UUID productId = UUID.randomUUID();
+
+        String requestBody = """
+            {
+              "productId": "%s",
+              "quantity": 0
+            }
+            """.formatted(productId);
+
+        given(currentUserResolver.getUserId(any(Authentication.class)))
+                .willReturn(1L);
+
+        // when & then
+        mockMvc.perform(post("/v1/cart/items")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
 }

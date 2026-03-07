@@ -1,4 +1,4 @@
-package com.babjo.deliverycommerce.global;
+package com.babjo.deliverycommerce.global.jpa;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;

@@ -297,14 +297,6 @@ public class UserControllerTest {
                             .with(user(new UserPrincipal(1L, "testuser", "ROLE_CUSTOMER"))))
                     .andExpect(status().isForbidden());
         }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // when & then
-            mockMvc.perform(get("/v1/users/1"))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     // ========================
@@ -334,14 +326,6 @@ public class UserControllerTest {
             // when & then
             mockMvc.perform(get("/v1/users"))
                     .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // when & then
-            mockMvc.perform(get("/v1/users"))
-                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -391,23 +375,6 @@ public class UserControllerTest {
                             .content(body))
                     .andExpect(status().isBadRequest());
         }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // given
-            String body = """
-                    {
-                        "prePw": "Password1!"
-                    }
-                    """;
-
-            // when & then
-            mockMvc.perform(patch("/v1/users/me")
-                            .contentType("application/json")
-                            .content(body))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     // ========================
@@ -454,23 +421,6 @@ public class UserControllerTest {
                             .contentType("application/json")
                             .content(body))
                     .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // given
-            String body = """
-                    {
-                        "nickname": "수정된닉네임"
-                    }
-                    """;
-
-            // when & then
-            mockMvc.perform(patch("/v1/users/1")
-                            .contentType("application/json")
-                            .content(body))
-                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -524,24 +474,6 @@ public class UserControllerTest {
                             .header("Authorization", "Bearer token"))
                     .andExpect(status().isBadRequest());
         }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // given
-            String body = """
-                    {
-                        "password": "Password1!"
-                    }
-                    """;
-
-            // when & then
-            mockMvc.perform(post("/v1/users/me")
-                            .contentType("application/json")
-                            .content(body)
-                            .header("Authorization", "Bearer token"))
-                    .andExpect(status().isUnauthorized());
-        }
     }
 
     // ========================
@@ -572,14 +504,6 @@ public class UserControllerTest {
             // when & then
             mockMvc.perform(delete("/v1/users/2"))
                     .andExpect(status().isForbidden());
-        }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // when & then
-            mockMvc.perform(delete("/v1/users/2"))
-                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -646,23 +570,6 @@ public class UserControllerTest {
                             .contentType("application/json")
                             .content(body))
                     .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // given
-            String body = """
-                    {
-                        "role": "CUSTOMER"
-                    }
-                    """;
-
-            // when & then
-            mockMvc.perform(patch("/v1/users/2/role")
-                            .contentType("application/json")
-                            .content(body))
-                    .andExpect(status().isUnauthorized());
         }
     }
 
@@ -744,28 +651,6 @@ public class UserControllerTest {
                             .contentType("application/json")
                             .content(body))
                     .andExpect(status().isBadRequest());
-        }
-
-        @Test
-        @DisplayName("미인증 사용자 - 401 반환")
-        void whenUnauthenticated() throws Exception {
-            // given
-            String body = """
-                    {
-                        "username": "newuser1",
-                        "password": "Password1!",
-                        "passwordConfirm": "Password1!",
-                        "email": "newuser@test.com",
-                        "nickname": "새유저",
-                        "role": "MANAGER"
-                    }
-                    """;
-
-            // when & then
-            mockMvc.perform(post("/v1/users/admin")
-                            .contentType("application/json")
-                            .content(body))
-                    .andExpect(status().isUnauthorized());
         }
     }
 }

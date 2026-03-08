@@ -9,7 +9,7 @@ import com.babjo.deliverycommerce.domain.cart.entity.CartItem;
 import com.babjo.deliverycommerce.domain.cart.repository.CartItemRepository;
 import com.babjo.deliverycommerce.domain.cart.repository.CartRepository;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
-import com.babjo.deliverycommerce.domain.product.repository.ProductRespository;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -27,12 +27,12 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductRespository productRespository;
+    private final ProductRepository productRepository;
 
-    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRespository productRespository) {
+    public CartService(CartRepository cartRepository, CartItemRepository cartItemRepository, ProductRepository productRepository) {
         this.cartRepository = cartRepository;
         this.cartItemRepository = cartItemRepository;
-        this.productRespository = productRespository;
+        this.productRepository = productRepository;
     }
 
     public CartResponseDto getMyCart(Long userId) {
@@ -136,7 +136,8 @@ public class CartService {
         validateQuantity(quantity);
 
         /*상품 존재/ 삭제 여부 확인 (deletedAt is null)*/
-        Product product = productRespository.findByProductIdAndDeletedAtIsNull(productId)
+        Product product = productRepository.findById(productId)
+                .filter(p -> !p.isDeleted())
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
         /*내 장바구니 조회(없으면  생성)*/

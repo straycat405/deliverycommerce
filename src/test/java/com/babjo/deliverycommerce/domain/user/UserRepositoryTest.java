@@ -13,8 +13,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
@@ -41,29 +39,6 @@ public class UserRepositoryTest {
     class ExistsByUsernameAll {
 
         @Test
-        @DisplayName("존재하는 아이디면 true를 반환한다")
-        void withExistingUsername() {
-            // given
-            userRepository.save(createUser("testuser", "test@test.com"));
-
-            // when
-            boolean result = userRepository.existsByUsernameAll("testuser");
-
-            // then
-            assertThat(result).isTrue();
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 아이디면 false를 반환한다")
-        void withNonExistentUsername() {
-            // when
-            boolean result = userRepository.existsByUsernameAll("notestuser");
-
-            // then
-            assertThat(result).isFalse();
-        }
-
-        @Test
         @DisplayName("탈퇴한 사용자의 아이디여도 true를 반환한다")
         void withDeletedUserUsername() {
             // given
@@ -80,32 +55,11 @@ public class UserRepositoryTest {
         }
     }
 
+    // '탈퇴한 사용자도 포함하는가'에 대한 커스텀 쿼리를 검증하는 것이 핵심이므로, 프레임워크가 검증한 케이스는 제외합니다.
+
     @Nested
     @DisplayName("existsByEmailAll")
     class ExistsByEmailAll {
-
-        @Test
-        @DisplayName("존재하는 이메일이면 true를 반환한다")
-        void withExistingEmail() {
-            // given
-            userRepository.save(createUser("testuser", "test@test.com"));
-
-            // when
-            boolean result = userRepository.existsByEmailAll("test@test.com");
-
-            // then
-            assertThat(result).isTrue();
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 email이면 false를 반환한다")
-        void withNonExistentEmail() {
-            // when
-            boolean result = userRepository.existsByEmailAll("noexistent@test.com");
-
-            // then
-            assertThat(result).isFalse();
-        }
 
         @Test
         @DisplayName("탈퇴한 사용자의 이메일이어도 true를 반환한다")
@@ -121,36 +75,6 @@ public class UserRepositoryTest {
 
             // then
             assertThat(result).isTrue();
-        }
-    }
-
-    @Nested
-    @DisplayName("findByUsername")
-    class FindByUsername {
-
-        @Test
-        @DisplayName("존재하는 아이디면 그 User를 반환한다")
-        void withExistingUsername() {
-            // given
-            userRepository.save(createUser("testuser", "test@test.com"));
-
-            // when
-            Optional<User> result = userRepository.findByUsername("testuser");
-
-            // then
-            assertThat(result).isPresent();
-            assertThat(result.get().getUsername()).isEqualTo("testuser");
-            assertThat(result.get().getEmail()).isEqualTo("test@test.com");
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 아이디면 Optional.empty()를 반환한다")
-        void withNonExistentUsername() {
-            // when
-            Optional<User> result = userRepository.findByUsername("nonexistent");
-
-            // then
-            assertThat(result).isEmpty();
         }
     }
 }

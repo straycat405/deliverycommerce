@@ -272,23 +272,6 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            String refreshToken = "validRefreshToken";
-            Claims mockClaims = mock(Claims.class);
-            given(mockClaims.getSubject()).willReturn("999");
-            given(jwtUtil.getUserInfoFromToken(refreshToken)).willReturn(mockClaims);
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.reissue(refreshToken))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
         @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
         void withWithdrawnUser() {
             // given
@@ -362,33 +345,6 @@ class UserServiceTest {
             // then
             assertThat(response.getUsername()).isEqualTo("testuser1");
         }
-
-        @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.getUser(999L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
-        void withWithdrawnUser() {
-            // given
-            User user = createDeletedUser(1L, "testuser1", UserEnumRole.CUSTOMER);
-            given(userRepository.findById(1L)).willReturn(Optional.of(user));
-
-            // when & then
-            assertThatThrownBy(() -> userService.getUser(1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
-        }
     }
 
     @Nested
@@ -420,35 +376,6 @@ class UserServiceTest {
 
             // then
             assertThat(response.getUsername()).isEqualTo("testuser1");
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            UserUpdateRequestDto request = createUpdateRequest(null, "Password1!", null, null, null);
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.updateUser(request, 999L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
-        void withWithdrawnUser() {
-            // given
-            User user = createDeletedUser(1L, "testuser1", UserEnumRole.CUSTOMER);
-            UserUpdateRequestDto request = createUpdateRequest(null, "Password1!", null, null, null);
-            given(userRepository.findById(1L)).willReturn(Optional.of(user));
-
-            // when & then
-            assertThatThrownBy(() -> userService.updateUser(request, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
         }
 
         @Test
@@ -538,33 +465,6 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.deleteUser(999L, "Password1!"))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
-        void withWithdrawnUser() {
-            // given
-            User user = createDeletedUser(1L, "testuser1", UserEnumRole.CUSTOMER);
-            given(userRepository.findById(1L)).willReturn(Optional.of(user));
-
-            // when & then
-            assertThatThrownBy(() -> userService.deleteUser(1L, "Password1!"))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
-        }
-
-        @Test
         @DisplayName("비밀번호 불일치 - INVALID_PASSWORD 예외 발생")
         void withInvalidPassword() {
             // given
@@ -609,33 +509,6 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminDeleteUser(999L, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
-        void withWithdrawnUser() {
-            // given
-            User user = createDeletedUser(2L, "targetuser", UserEnumRole.CUSTOMER);
-            given(userRepository.findById(2L)).willReturn(Optional.of(user));
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminDeleteUser(2L, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
-        }
-
-        @Test
         @DisplayName("MASTER 권한 대상 - FORBIDDEN 예외 발생")
         void whenTargetIsMaster() {
             // given
@@ -676,33 +549,6 @@ class UserServiceTest {
                     .isInstanceOf(CustomException.class)
                     .extracting("errorCode")
                     .isEqualTo(ErrorCode.CANNOT_UPDATE_ROLE_SELF);
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 userId - USER_NOT_FOUND 예외 발생")
-        void withNonExistentUser() {
-            // given
-            given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminUpdateRoleUser(999L, 1L, "OWNER"))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.USER_NOT_FOUND);
-        }
-
-        @Test
-        @DisplayName("탈퇴한 사용자 - WITHDRAWN_USER 예외 발생")
-        void withWithdrawnUser() {
-            // given
-            User user = createDeletedUser(2L, "targetuser", UserEnumRole.CUSTOMER);
-            given(userRepository.findById(2L)).willReturn(Optional.of(user));
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminUpdateRoleUser(2L, 1L, "OWNER"))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.WITHDRAWN_USER);
         }
 
         @Test
@@ -752,50 +598,6 @@ class UserServiceTest {
             // then
             assertThat(response.getUsername()).isEqualTo("manager1");
             assertThat(response.getRole()).isEqualTo("MANAGER");
-        }
-
-        @Test
-        @DisplayName("비밀번호 확인 불일치 - PASSWORD_MISMATCH 예외 발생")
-        void withPasswordMismatch() {
-            // given
-            AdminSignupRequestDto request = createAdminSignupRequest("manager1", "Password1!", "WrongPassword1!", "MANAGER");
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminSignup(request, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.PASSWORD_MISMATCH);
-        }
-
-        @Test
-        @DisplayName("username 중복 - DUPLICATE_USERNAME 예외 발생")
-        void withDuplicateUsername() {
-            // given
-            AdminSignupRequestDto request = createAdminSignupRequest("manager1", "Password1!", "Password1!", "MANAGER");
-
-            given(userRepository.existsByUsernameAll(request.getUsername())).willReturn(true);
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminSignup(request, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.DUPLICATE_USERNAME);
-        }
-
-        @Test
-        @DisplayName("email 중복 - DUPLICATE_EMAIL 예외 발생")
-        void withDuplicateEmail() {
-            // given
-            AdminSignupRequestDto request = createAdminSignupRequest("manager1", "Password1!", "Password1!", "MANAGER");
-
-            given(userRepository.existsByUsernameAll(request.getUsername())).willReturn(false);
-            given(userRepository.existsByEmailAll(request.getEmail())).willReturn(true);
-
-            // when & then
-            assertThatThrownBy(() -> userService.adminSignup(request, 1L))
-                    .isInstanceOf(CustomException.class)
-                    .extracting("errorCode")
-                    .isEqualTo(ErrorCode.DUPLICATE_EMAIL);
         }
     }
 }

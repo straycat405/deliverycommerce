@@ -81,7 +81,12 @@ public enum ErrorCode {
     // ── Review ────────────────────────────────────────
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "REVIEW_NOT_FOUND", "존재하지 않는 리뷰입니다."),
     REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "REVIEW_ALREADY_EXISTS", "이미 리뷰를 작성했습니다."),
-    REVIEW_FORBIDDEN(HttpStatus.FORBIDDEN, "REVIEW_FORBIDDEN", "해당 리뷰에 대한 권한이 없습니다.");
+    REVIEW_FORBIDDEN(HttpStatus.FORBIDDEN, "REVIEW_FORBIDDEN", "해당 리뷰에 대한 권한이 없습니다."),
+
+    // ── AiLog  ──────────────────────────────────────────
+    AI_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI_GENERATION_FAILED", "AI 설명 생성에 실패했습니다. 잠시 후 다시 시도해주세요."),
+    AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI_LOG_FORBIDDEN", "AI 로그 조회 권한이 없습니다."),
+    AI_LOG_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_LOG_NOT_FOUND", "존재하지 않는 AI 로그입니다.");
 
 
     private final HttpStatus status;

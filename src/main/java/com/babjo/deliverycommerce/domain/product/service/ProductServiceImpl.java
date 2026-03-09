@@ -1,7 +1,11 @@
 package com.babjo.deliverycommerce.domain.product.service;
 
+import com.babjo.deliverycommerce.domain.ai.entity.AiRequestLog;
+import com.babjo.deliverycommerce.domain.ai.entity.AiRequestStatus;
+import com.babjo.deliverycommerce.domain.ai.repository.AiRequestLogRepository;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -28,6 +32,10 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
     private final AiDescriptionService aiDescriptionService;
+
+    private static final String AI_MODEL = "gemini-3-flash-preview";
+    private final AiRequestLogRepository aiRequestLogRepository;
+
 
     /* =========================================================
        관리 API (OWNER/MANAGER/MASTER)
@@ -59,6 +67,8 @@ public class ProductServiceImpl implements ProductService {
                 .description(description)
                 .useAiDescription(request.getUseAiDescription())
                 .build();
+
+        product.initCreatedBy(user.getUserId());
 
         productRepository.save(product);
 
@@ -128,10 +138,52 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = getActiveProduct(storeId, productId);
 
-        String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
-        product.updateDescription(aiDescription);
+        String prompt = """
+                당신은 배달앱 음식 메뉴 소개를 작성하는 마케터입니다.
+                
+                [메뉴 이름]
+                %s
+                
+                [메뉴 특징]
+                %s
+                
+                위 정보를 기반으로 배달앱에 등록할 음식 설명을 작성하세요.
+                
+                조건:
+                - 답변을 최대한 간결하게 50자 이하로
+                - 먹고 싶어지게 작성
+                - 과장 광고 금지
+                - 이모지 사용 금지
+                """.formatted(product.getName(), point);
 
-        return ProductResponseDto.from(product);
+        try {
+            String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
+            product.updateDescription(aiDescription);
+
+            aiRequestLogRepository.save(AiRequestLog.builder()
+                    .productId(productId)
+                    .userId(user.getUserId())
+                    .model(AI_MODEL)
+                    .prompt(prompt)
+                    .response(aiDescription)
+                    .status(AiRequestStatus.SUCCESS)
+                    .build());
+
+            return ProductResponseDto.from(product);
+        } catch (Exception e) {
+            aiRequestLogRepository.save(AiRequestLog.builder()
+                    .productId(productId)
+                    .userId(user.getUserId())
+                    .model(AI_MODEL)
+                    .prompt(prompt)
+                    .status(AiRequestStatus.FAIL)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            // 정책: 이번 이슈에서는 실패를 그대로 에러로 내보내는 편이 명확함
+            throw new CustomException(ErrorCode.AI_GENERATION_FAILED);
+        }
+
     }
 
     /* =========================================================
@@ -198,7 +250,7 @@ public class ProductServiceImpl implements ProductService {
 
     private Product getActiveProduct(UUID storeId, UUID productId) {
 
-        return productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId)
+        return productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(productId, storeId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
     }
 
@@ -218,11 +270,11 @@ public class ProductServiceImpl implements ProductService {
 
         String role= user.getRole();
 
-        if(role.equals("MANAGER") || role.equals("MASTER")) {
+        if(role.equals(UserEnumRole.Authority.MANAGER) || role.equals(UserEnumRole.Authority.MASTER)) {
             return;
         }
 
-        if (role.equals("OWNER")) {
+        if (role.equals(UserEnumRole.Authority.OWNER)) {
             Store store = getActiveStore(storeId);
             Long ownerUserId = store.getCreatedBy();
 

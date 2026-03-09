@@ -11,7 +11,7 @@ import java.util.UUID;
 public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     // 단건 조회(삭제 제외)
-    Optional<Product> findByProductIdAndStore_StoreIdAndDeletedAtIsNull(UUID storeId, UUID productId);
+    Optional<Product> findByProductIdAndStore_StoreIdAndDeletedAtIsNull(UUID productId, UUID storeId);
 
     // 가게별 전체 조회(삭제 제외)
     Page<Product> findAllByStore_StoreIdAndDeletedAtIsNull(UUID storeId, Pageable pageable);

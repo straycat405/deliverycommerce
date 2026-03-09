@@ -1,0 +1,150 @@
+name: CI/CD
+
+# main 브랜치에 push 되거나 PR이 열릴 때 실행
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ──────────────────────────────────────────
+  # 1단계: 테스트 (PR / push 모두 실행)
+  # ──────────────────────────────────────────
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    # application-test.yaml 이 localhost:6379 Redis를 바라보므로
+    # GitHub Actions 컨테이너 서비스로 Redis를 함께 띄움
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Java 17 세팅
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # Gradle 의존성 캐시 (빌드 시간 단축)
+      - name: Gradle 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x ./gradlew
+
+      # application-test.yaml 프로파일 사용 (H2 인메모리 DB + 로컬 Redis)
+      - name: 테스트 실행
+        run: ./gradlew test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+  # ──────────────────────────────────────────
+  # 2단계: EC2 배포 (main push 시에만 실행)
+  # ──────────────────────────────────────────
+  deploy:
+    name: Deploy to EC2
+    needs: test # 테스트 실패시 배포 차단
+    runs-on: ubuntu-latest
+    timeout-minutes: 10             # SSH hang 등 무한 대기 방지
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Java 17 세팅
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Gradle 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: gradlew 실행 권한 부여
+        run: chmod +x ./gradlew
+
+      # 테스트는 이미 위에서 통과했으므로 -x test 로 스킵
+      - name: JAR 빌드
+        run: ./gradlew bootJar -x test
+
+      # SCP 전송 전에 기존 프로세스 종료 + 구버전 JAR 삭제
+      # (SCP 후에 삭제하면 새로 올린 JAR까지 지워지므로 순서 중요)
+      - name: EC2 준비 (프로세스 종료 + 구버전 JAR 삭제)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            pkill -f 'deliverycommerce' || true
+            sleep 2
+            mkdir -p /home/${{ secrets.EC2_USERNAME }}/app
+            rm -f /home/${{ secrets.EC2_USERNAME }}/app/*.jar
+
+      # build/libs/ 안의 JAR 파일을 EC2 ~/app/ 디렉토리로 전송
+      - name: JAR → EC2 전송 (SCP)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          source: "build/libs/*.jar"
+          target: "/home/${{ secrets.EC2_USERNAME }}/app"
+          strip_components: 2           # build/libs 경로를 제거하고 ~/app/*.jar 로 저장
+
+      # 새 JAR 실행
+      - name: EC2 앱 시작 (SSH)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/${{ secrets.EC2_USERNAME }}/app
+
+            # ls 로 JAR 이름을 확정해서 *.jar 글로빙 오류 방지
+            APP_JAR=$(ls *.jar | head -n 1)
+
+            # nohup: SSH 세션이 끊겨도 프로세스 유지
+            # 환경변수는 GitHub Secrets 에서 주입
+            nohup java \
+              -Dspring.profiles.active=prod \
+              -DREDIS_HOST=${{ secrets.REDIS_HOST }} \
+              -DREDIS_PORT=${{ secrets.REDIS_PORT }} \
+              -DJWT_SECRET=${{ secrets.JWT_SECRET }} \
+              -DDB_HOST=${{ secrets.DB_HOST }} \
+              -DDB_PORT=${{ secrets.DB_PORT }} \
+              -DDB_NAME=${{ secrets.DB_NAME }} \
+              -DDB_USERNAME=${{ secrets.DB_USERNAME }} \
+              -DDB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -DGOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }} \
+              -jar "$APP_JAR" \
+              > app.log 2>&1 &
+
+            echo "배포 완료. JAR: $APP_JAR / PID: $!"

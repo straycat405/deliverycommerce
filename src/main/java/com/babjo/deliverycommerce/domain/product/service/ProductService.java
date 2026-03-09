@@ -4,21 +4,23 @@ import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.UUID;
 
 public interface ProductService {
-    // Store 이후 연결
-    ProductResponseDto create(ProductCreateRequestDto request);
-    ProductResponseDto get(UUID productIdm,UserPrincipal user);
-    List<ProductResponseDto> getAll(UserPrincipal user);
-    List<ProductResponseDto> getByCategory(String category, UserPrincipal user);
-    ProductResponseDto update(UUID productId, ProductUpdateRequestDto request);
-    void delete(UUID productId, Long userId);
 
-    ProductResponseDto generateDescription(UUID productId, String point);
+    // 관리 API (OWNER, MANAGER, MASTER)
+    ProductResponseDto create(UUID storeId, ProductCreateRequestDto request, UserPrincipal user);
+    ProductResponseDto update(UUID storeId, UUID productId, ProductUpdateRequestDto request, UserPrincipal user);
+    void delete(UUID storeId, UUID productId, UserPrincipal user);
+    void hide(UUID storeId, UUID productId, UserPrincipal user);
+    void show(UUID storeId, UUID productId, UserPrincipal user);
 
-    void hide(UUID productId);
-    void show(UUID productId);
+    ProductResponseDto generateDescription(UUID storeId, UUID productId, String point, UserPrincipal user);
+
+    // 조회 API (permitAll)
+    ProductResponseDto get(UUID storeId, UUID productId,UserPrincipal user);
+    Page<ProductResponseDto> getAll(UUID storeId, String categoryOrNull, UserPrincipal user, Pageable pageable);
 }

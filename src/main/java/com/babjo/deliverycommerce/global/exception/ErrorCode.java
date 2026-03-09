@@ -64,6 +64,17 @@ public enum ErrorCode {
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
     STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다."),
 
+
+    // ── Cart ─────────────────────────────────────────
+    /*수정/삭제하려는 CartItem이 없을때 */
+    CART_ITEM_NOT_FOUND(HttpStatus.NOT_FOUND, "CART_ITEM_NOT_FOUND", "존재하지 않는 장바구니 항목입니다."),
+
+    CART_FORBIDDEN(HttpStatus.FORBIDDEN, "CART_FORBIDDEN", "해당 장바구니에 대한 권한이 없습니다."),
+    INVALID_QUANTITY(HttpStatus.BAD_REQUEST, "INVALID_QUANTITY", "수량은 1 이상이어야 합니다."),
+
+    /*한 장바구니에 다른 Store 상품을 담으려 할 때*/
+    CART_STORE_MISMATCH(HttpStatus.BAD_REQUEST, "CART_STORE_MISMATCH", "다른 가게의 상품은 같은 장바구니에 담을 수 없습니다."),
+
     // ── Order ─────────────────────────────────────────
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "존재하지 않는 주문입니다."),
 
@@ -80,7 +91,8 @@ public enum ErrorCode {
     PAYMENT_CANCEL_TIME_EXPIRED(HttpStatus.BAD_REQUEST, "PAYMENT_CANCEL_TIME_EXPIRED", "결제 취소 가능 시간(5분)이 초과되었습니다."),
     PAYMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "PAYMENT_FORBIDDEN", "해당 결제에 대한 권한이 없습니다.");
 
+
     private final HttpStatus status;
     private final String code;
     private final String message;
-}
+    }

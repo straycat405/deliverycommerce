@@ -31,29 +31,17 @@ public class User extends BaseEntity {
      * );
      *
      * COMMENT ON COLUMN "p_user"."user_id" IS 'PK / 유저 고유 식별자 (시리얼넘버)';
-     *
      * COMMENT ON COLUMN "p_user"."username" IS 'UNIQUE / 로그인 아이디';
-     *
      * COMMENT ON COLUMN "p_user"."password" IS '사용자 비밀번호, BCrypt';
-     *
      * COMMENT ON COLUMN "p_user"."email" IS 'UNIQUE / 사용자 이메일';
-     *
      * COMMENT ON COLUMN "p_user"."nickname" IS '사용자 닉네임';
-     *
      * COMMENT ON COLUMN "p_user"."role" IS '(ENUM) CUSTOMER,OWNER,MANAGER,MASTER';
-     *
      * COMMENT ON COLUMN "p_user"."created_at" IS '레코드 생성 시간';
-     *
      * COMMENT ON COLUMN "p_user"."created_by" IS 'user_id / 레코드 생성자';
-     *
      * COMMENT ON COLUMN "p_user"."updated_at" IS '레코드 수정 시간';
-     *
      * COMMENT ON COLUMN "p_user"."updated_by" IS 'user_id / 레코드 수정자';
-     *
      * COMMENT ON COLUMN "p_user"."deleted_at" IS '레코드 삭제 시간';
-     *
      * COMMENT ON COLUMN "p_user"."deleted_by" IS 'user_id / 레코드 삭제자';
-     *
      * ALTER TABLE "p_user" ADD CONSTRAINT "PK_P_USER" PRIMARY KEY (
      * 	"user_id"
      * );

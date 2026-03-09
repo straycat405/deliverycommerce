@@ -62,17 +62,14 @@ jobs:
           SPRING_PROFILES_ACTIVE: test
 
   # ──────────────────────────────────────────
-  # 2단계: EC2 배포 (main push 시에만 실행)
+  # 2단계: Docker 이미지 빌드 & Hub push + EC2 배포 (main push 시에만 실행)
   # ──────────────────────────────────────────
   deploy:
     name: Deploy to EC2
     needs: test # 테스트 실패시 배포 차단
     runs-on: ubuntu-latest
     timeout-minutes: 10 # SSH hang 등 무한 대기 방지
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' #main브랜치인지 and 실제 PUSH 검사
-
-    # 소스 체크아웃 ~ gradlew 권한 부여 까지는 test job과 동일하게 반복
-    # test / deploy job은 서로 독립된 러너 VM에서 실행하므로 각자 환경 설정 필요
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' # main 브랜치인지 and 실제 PUSH 검사
 
     steps:
       - name: 소스 체크아웃
@@ -102,9 +99,28 @@ jobs:
       - name: JAR 빌드
         run: ./gradlew bootJar -x test
 
-      # SCP 전송 전에 기존 프로세스 종료 + 구버전 JAR 삭제
-      # (SCP 후에 삭제하면 새로 올린 JAR까지 지워지므로 순서 신경쓸것)
-      - name: EC2 준비 (프로세스 종료 + 구버전 JAR 삭제)
+      # Docker Hub 로그인
+      # DOCKERHUB_USERNAME, DOCKERHUB_TOKEN 은 GitHub Secrets 에 등록 필요
+      - name: Docker Hub 로그인
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Docker 이미지 빌드 후 Docker Hub push
+      # latest 태그: EC2에서 항상 최신 이미지를 pull 하기 위해 사용
+      # sha 태그: 특정 커밋 시점으로 롤백할 때 사용 가능
+      - name: Docker 이미지 빌드 & push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/deliverycommerce:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/deliverycommerce:${{ github.sha }}
+
+      # EC2 SSH 접속 → 최신 이미지 pull → 앱 컨테이너 재시작
+      - name: EC2 배포 (SSH)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -112,51 +128,26 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           script: |
-            pkill -f 'deliverycommerce' || true
-            sleep 2
-            mkdir -p /home/${{ secrets.EC2_USERNAME }}/app
-            rm -f /home/${{ secrets.EC2_USERNAME }}/app/*.jar
+            cd ~/app
 
-      # build/libs/ 안의 JAR 파일을 EC2 ~/app/ 디렉토리로 전송
-      - name: JAR → EC2 전송 (SCP)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          source: "build/libs/*.jar"
-          target: "/home/${{ secrets.EC2_USERNAME }}/app"
-          strip_components: 2  # build/libs 경로를 제거하고 ~/app/*.jar 로 저장
+            # Docker Hub에서 최신 앱 이미지 pull
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/deliverycommerce:latest
 
-      # 새 JAR 실행
-      - name: EC2 앱 시작 (SSH)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
-          script: |
-            cd /home/${{ secrets.EC2_USERNAME }}/app
+            # 환경변수 파일 갱신 (.env 파일로 docker-compose에 주입)
+            cat > .env << 'EOF'
+            SPRING_PROFILES_ACTIVE=prod
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_USERNAME=${{ secrets.DB_USERNAME }}
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+            REDIS_HOST=${{ secrets.REDIS_HOST }}
+            REDIS_PORT=${{ secrets.REDIS_PORT }}
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+            EOF
 
-            # ls 로 JAR 이름을 확정해서 *.jar 글로빙 오류 방지
-            APP_JAR=$(ls *.jar | head -n 1)
+            # 앱 컨테이너만 재시작 (DB/Redis 컨테이너는 유지)
+            docker-compose up -d --no-deps app
 
-            # nohup: SSH 세션이 끊겨도 프로세스 유지
-            # 환경변수는 GitHub Secrets 에서 주입
-            nohup java \
-              -Dspring.profiles.active=prod \
-              -DREDIS_HOST=${{ secrets.REDIS_HOST }} \
-              -DREDIS_PORT=${{ secrets.REDIS_PORT }} \
-              -DJWT_SECRET=${{ secrets.JWT_SECRET }} \
-              -DDB_HOST=${{ secrets.DB_HOST }} \
-              -DDB_PORT=${{ secrets.DB_PORT }} \
-              -DDB_NAME=${{ secrets.DB_NAME }} \
-              -DDB_USERNAME=${{ secrets.DB_USERNAME }} \
-              -DDB_PASSWORD=${{ secrets.DB_PASSWORD }} \
-              -DGOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }} \
-              -jar "$APP_JAR" \
-              > app.log 2>&1 &
-
-            echo "배포 완료. JAR: $APP_JAR / PID: $!"
+            echo "배포 완료: ${{ github.sha }}"

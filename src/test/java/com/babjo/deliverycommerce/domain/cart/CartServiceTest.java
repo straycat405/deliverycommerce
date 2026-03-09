@@ -10,6 +10,7 @@ import com.babjo.deliverycommerce.domain.cart.repository.CartRepository;
 import com.babjo.deliverycommerce.domain.cart.service.CartService;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
+import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -478,6 +479,40 @@ public class CartServiceTest {
             //then
             assertThat(result.getItems()).hasSize(1);
             assertThat(result.getItems().get(0).getQuantity()).isEqualTo(1);
+
+        }
+
+        @Test
+        @DisplayName("장바구니에 다른 가게 상품을 담으면 CART_STORE_MISMATCH 예외")
+        void 다른_가게_상품_추가시_CART_STORE_MISMATCH() throws Exception {
+            // given
+            Long userId = 1L;
+
+            UUID cartStoreId = UUID.randomUUID();   // 장바구니가 이미 기준으로 잡고 있는 가게
+            UUID productStoreId = UUID.randomUUID();    // 이번에 담으려는 가게
+            UUID productId = UUID.randomUUID();
+
+            CartItemAddRequestDto request = 상품추가요청(productId, 1);
+
+            Cart cart = Cart.create(userId, cartStoreId);
+            given(cartRepository.findByUserIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(cart));
+
+            Product product = mock(Product.class);
+            Store store = mock(Store.class);
+
+            given(product.getStore()).willReturn(store);
+            given(store.getStoreId()).willReturn(productStoreId);
+
+            // addItem 상품 조회 로직
+            given(product.isDeleted()).willReturn(false);
+            given(productRepository.findById(productId)).willReturn(Optional.of(product));
+
+
+            // when & then
+            assertThatThrownBy(() -> cartService.addItem(userId, request))
+                    .isInstanceOf(CustomException.class)
+                    .extracting("errorCode")
+                    .isEqualTo(ErrorCode.CART_STORE_MISMATCH);
 
         }
 

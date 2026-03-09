@@ -180,7 +180,6 @@ public class ProductServiceImpl implements ProductService {
                     .errorMessage(e.getMessage())
                     .build());
 
-            // 정책: 이번 이슈에서는 실패를 그대로 에러로 내보내는 편이 명확함
             throw new CustomException(ErrorCode.AI_GENERATION_FAILED);
         }
 

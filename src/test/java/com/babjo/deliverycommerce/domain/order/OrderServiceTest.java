@@ -1,0 +1,146 @@
+package com.babjo.deliverycommerce.domain.order;
+
+import com.babjo.deliverycommerce.domain.order.dto.OrderRequestDto;
+import com.babjo.deliverycommerce.domain.order.dto.OrderResponseDto;
+import com.babjo.deliverycommerce.domain.order.entity.Order;
+import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
+import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
+import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
+import com.babjo.deliverycommerce.domain.order.service.OrderService;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+@ExtendWith({MockitoExtension.class})
+public class OrderServiceTest {
+
+    @InjectMocks
+    private OrderService orderService;
+
+    @Mock
+    private OrderRepository orderRepository;
+
+    @Test
+    @DisplayName("주문 생성 성공 테스트")
+    void createOrder_success(){
+        Long userId = 1L;
+        UUID storeId = UUID.randomUUID();
+
+        OrderRequestDto.OrderItemRequest itemDto = new OrderRequestDto.OrderItemRequest(
+                UUID.randomUUID() ,"치킨", 20000, 1
+        );
+
+        OrderRequestDto.CreateOrder request = new OrderRequestDto.CreateOrder(
+                storeId, "인천시", "없습니다.", List.of(itemDto)
+        );
+        Order order = Order.createOrder(userId, storeId, "인천시", "없습니다.",
+                List.of(OrderItem.createOrderItem(itemDto.getProductId(), itemDto.getProductName(),
+                        itemDto.getOrderPrice(), itemDto.getOrderCount())));
+        given(orderRepository.save(any(Order.class))).willReturn(order);
+
+        OrderResponseDto.OrderDetail result =  orderService.createOrder(userId, request);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(userId);
+        assertThat(result.getTotalPrice()).isEqualTo(20000);
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("주문 취소 실패 - 본인 주문이 아닐 때")
+    void cancelOrder_fail_notOwner() {
+
+        UUID orderId = UUID.randomUUID();
+        Long orderUserId = 1L;
+        Long hackerId = 999L;
+
+        Order order = mock(Order.class);
+        given(order.getUserId()).willReturn(orderUserId);
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+
+        assertThatThrownBy(() -> orderService.cancelOrder(orderId, hackerId, "단순변심"))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("본인의 주문에 대해서만 처리 가능합니다.");
+    }
+
+    @Test
+    @DisplayName("주문 상세 조회 성공")
+    void getOrderDetails_success() {
+        UUID orderId = UUID.randomUUID();
+        Order order = mock(Order.class);
+        given(order.getOrderId()).willReturn(orderId);
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        OrderResponseDto.OrderDetail result = orderService.getOrderDetails(orderId);
+
+        assertThat(result).isNotNull();
+        verify(orderRepository).findById(orderId);
+    }
+
+    @Test
+    @DisplayName("주문 접수 성공")
+    void acceptOrder_success() {
+        UUID orderId = UUID.randomUUID();
+        Long ownerId = 100L;
+        Order order = spy(Order.createOrder(1L, UUID.randomUUID(), "주소", "메시지", List.of()));
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+        OrderRequestDto.AcceptOrder request = new OrderRequestDto.AcceptOrder(30);
+
+        OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request);
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.ACCEPTED);
+        assertThat(order.getCookingMinutes()).isEqualTo(30);
+        assertThat(order.getAcceptedBy()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("주문 상태 변경 성공 - 조리 시작")
+    void updateOrderStatus_preparing() {
+        UUID orderId = UUID.randomUUID();
+        Long ownerId = 100L;
+        Order order = spy(Order.createOrder(1L, UUID.randomUUID(), "주소", "메시지", List.of()));
+        order.accept(ownerId, 30); // 접수된 상태여야 조리 시작 가능
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PREPARING);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PREPARING);
+        assertThat(order.getPreparingStartedBy()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("주문 내역 삭제 성공")
+    void softDeleteOrder_success() {
+        UUID orderId = UUID.randomUUID();
+        Long userId = 1L;
+
+        Order order = spy(Order.createOrder(userId, UUID.randomUUID(), "주소", "메시지", List.of()));
+
+        // 삭제 혹은 완료 상태가 되어야 하므로 삭제 가능한 상태( 취소 상태 )로 강제 변경
+        order.cancel(userId, "단순 변심");
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        orderService.softDeleteOrder(orderId, userId);
+
+        assertThat(order.getDeletedAt()).isNotNull(); // 삭제 시간이 기록되었는지 확인
+        assertThat(order.getDeletedBy()).isEqualTo(userId);
+    }
+}

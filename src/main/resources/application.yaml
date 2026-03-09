@@ -1,3 +1,43 @@
 spring:
   application:
     name: deliverycommerce
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+  config:
+    import: optional:file:.env[.properties]
+    # 배포시에는 optional:file:.env.prod[.properties] 식으로 설정
+  security:
+    user:
+      name: unused
+      password: unused
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      timeout: 2000
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-expiration: 900000 # 15min
+  refresh-expiration: 604800000 # 7D
+
+# swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html      # UI 경로 변경
+    tags-sorter: alpha          # 태그 알파벳 정렬
+    operations-sorter: method   # HTTP 메서드 순 정렬
+  api-docs:
+    path: /v3/api-docs          # API docs 경로
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# Google Ai
+google:
+  ai:
+    api-key: ${GOOGLE_API_KEY}

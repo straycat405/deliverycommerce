@@ -13,6 +13,9 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
     // 단건 조회(삭제 제외)
     Optional<Product> findByProductIdAndStore_StoreIdAndDeletedAtIsNull(UUID storeId, UUID productId);
 
+    // 단건 조회
+    Optional <Product> findByProductIdAndStore_StoreId(UUID storeId, UUID productId);
+
     // 가게별 전체 조회(삭제 제외)
     Page<Product> findAllByStore_StoreIdAndDeletedAtIsNull(UUID storeId, Pageable pageable);
 

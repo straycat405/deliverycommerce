@@ -2,6 +2,7 @@ package com.babjo.deliverycommerce.domain.product.service;
 
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -147,7 +148,13 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponseDto get(UUID storeId, UUID productId, UserPrincipal user) {
 
-        Product product = getActiveProduct(storeId, productId);
+        Product product = productRepository.findByProductIdAndStore_StoreId(storeId, productId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // 삭제 상품 조회 차단
+        if (product.isDeleted()) {
+            throw new CustomException(ErrorCode.PRODUCT_DELETED);
+        }
 
         // 숨김 상품 접근 제어
         if(product.isProductHide() && !canViewHiddenProduct(storeId, user)) {
@@ -218,11 +225,11 @@ public class ProductServiceImpl implements ProductService {
 
         String role= user.getRole();
 
-        if(role.equals("MANAGER") || role.equals("MASTER")) {
+        if(role.equals(UserEnumRole.Authority.MANAGER) || role.equals(UserEnumRole.Authority.MASTER)) {
             return;
         }
 
-        if (role.equals("OWNER")) {
+        if (role.equals(UserEnumRole.Authority.OWNER)) {
             Store store = getActiveStore(storeId);
             Long ownerUserId = store.getCreatedBy();
 
@@ -247,11 +254,11 @@ public class ProductServiceImpl implements ProductService {
 
         String role = user.getRole();
 
-        if(role.equals("MANAGER") || role.equals("MASTER")) {
+        if(role.equals(UserEnumRole.Authority.MANAGER) || role.equals(UserEnumRole.Authority.MASTER)) {
             return true;
         }
 
-        if(role.equals("OWNER")) {
+        if(role.equals(UserEnumRole.Authority.OWNER)) {
             Store store = getActiveStore(storeId);
             Long ownerId = store.getCreatedBy();
             return ownerId != null && ownerId.equals(user.getUserId());

@@ -5,6 +5,7 @@ import com.babjo.deliverycommerce.domain.product.service.AiDescriptionService;
 import com.babjo.deliverycommerce.domain.product.service.ProductServiceImpl;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -60,7 +61,7 @@ class ProductServiceImplTest {
         );
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("OWNER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.OWNER);
         when(user.getUserId()).thenReturn(2L);
 
         Store store = mock(Store.class);
@@ -80,7 +81,7 @@ class ProductServiceImplTest {
     @Test
     void getProduct_notFound() {
         // given
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.empty());
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -109,11 +110,11 @@ class ProductServiceImplTest {
 
         product.hide();
 
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("CUSTOMER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.CUSTOMER);
 
         // when & then
         assertThatThrownBy(() -> productService.get(storeId, productId, user))
@@ -142,7 +143,7 @@ class ProductServiceImplTest {
         // 현재 서비스의 getActiveProduct()는 findByProductIdAndDeletedAtIsNull로 조회해서
         // 삭제된 상품은 보통 Optional.empty가 되어야 자연스러움.
         // 하지만 지금 코드에는 deletedAt 체크도 있으니 테스트에서 해당 흐름을 강제로 태우려면 Optional.of(...)로 준다.
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
@@ -170,11 +171,11 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("OWNER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.OWNER);
         when(user.getUserId()).thenReturn(2L);
 
         Store store = mock(Store.class);
@@ -204,11 +205,11 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("OWNER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.OWNER);
         when(user.getUserId()).thenReturn(2L);
 
         Store store = mock(Store.class);
@@ -235,11 +236,11 @@ class ProductServiceImplTest {
                 .build();
         product.hide();
 
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreId(storeId, productId))
                 .thenReturn(Optional.of(product));
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("MANAGER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.MANAGER);
 
         // when
         ProductResponseDto response = productService.get(storeId, productId, user);
@@ -270,7 +271,7 @@ class ProductServiceImplTest {
                 .thenReturn("트러플 향 가득한 부드러운 크림 파스타!");
 
         UserPrincipal user = mock(UserPrincipal.class);
-        when(user.getRole()).thenReturn("OWNER");
+        when(user.getRole()).thenReturn(UserEnumRole.Authority.OWNER);
         when(user.getUserId()).thenReturn(2L);
 
         Store store = mock(Store.class);

@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.payment.service;
 
+import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentSearchRequest;
 import com.babjo.deliverycommerce.domain.payment.dto.response.*;
 import com.babjo.deliverycommerce.domain.payment.entity.Payment;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentHistory;
@@ -12,12 +13,12 @@ import com.babjo.deliverycommerce.domain.payment.repository.PaymentRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 결제 서비스
@@ -64,10 +65,17 @@ public class PaymentService {
 
     /**
      * 결제 승인: READY → COMPLETED
+     * - CUSTOMER/OWNER: 본인 결제만 승인 가능
+     * - MANAGER/MASTER: 모든 결제 승인 가능
      */
     @Transactional
-    public PaymentConfirmResponse confirmPayment(UUID paymentId, PaymentConfirmRequest request, Long userId) {
+    public PaymentConfirmResponse confirmPayment(UUID paymentId, PaymentConfirmRequest request,
+                                                 Long userId, boolean isAdmin) {
         Payment payment = getPaymentOrThrow(paymentId);
+
+        if (!isAdmin && !payment.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.PAYMENT_FORBIDDEN);
+        }
 
         if (payment.getPaymentStatus() != PaymentStatus.READY) {
             throw new CustomException(ErrorCode.PAYMENT_INVALID_STATUS);
@@ -88,10 +96,16 @@ public class PaymentService {
 
     /**
      * 결제 실패: READY → FAILED
+     * - CUSTOMER/OWNER: 본인 결제만 실패 처리 가능
+     * - MANAGER/MASTER: 모든 결제 실패 처리 가능
      */
     @Transactional
-    public PaymentFailResponse failPayment(UUID paymentId, Long userId) {
+    public PaymentFailResponse failPayment(UUID paymentId, Long userId, boolean isAdmin) {
         Payment payment = getPaymentOrThrow(paymentId);
+
+        if (!isAdmin && !payment.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.PAYMENT_FORBIDDEN);
+        }
 
         if (payment.getPaymentStatus() != PaymentStatus.READY) {
             throw new CustomException(ErrorCode.PAYMENT_INVALID_STATUS);
@@ -112,8 +126,8 @@ public class PaymentService {
 
     /**
      * 결제 취소: READY 또는 COMPLETED → CANCELED
-     * - 결제 생성 5분 이내에만 취소 가능 (요구사항: 주문 취소 5분 이내 제한을 결제에도 적용)
-     * - CUSTOMER: 본인 결제만 취소 가능
+     * - 결제 생성 5분 이내에만 취소 가능 (요구사항)
+     * - CUSTOMER/OWNER: 본인 결제만 취소 가능
      * - MANAGER/MASTER: 모든 결제 취소 가능
      */
     @Transactional
@@ -135,8 +149,10 @@ public class PaymentService {
         }
 
         // 5분 이내 취소 가능 체크
-        if (payment.getCreatedAt() != null &&
-                payment.getCreatedAt().plusMinutes(5).isBefore(java.time.LocalDateTime.now())) {
+        // createdAt은 JPA persist 이후 자동 세팅되므로 항상 존재해야 함
+        // null 방어 대신 null이면 시간 제한 우회되는 허점을 차단
+        LocalDateTime createdAt = payment.getCreatedAt();
+        if (createdAt == null || createdAt.plusMinutes(5).isBefore(LocalDateTime.now())) {
             throw new CustomException(ErrorCode.PAYMENT_CANCEL_TIME_EXPIRED);
         }
 
@@ -157,20 +173,24 @@ public class PaymentService {
     // ─────────────────────────────────────────────────────────────────
 
     /**
-     * 조건 기반 동적 결제 목록 조회 (QueryDSL)
+     * 조건 기반 동적 결제 목록 조회 (QueryDSL + Pagination)
      * - CUSTOMER/OWNER: 본인 결제만 조회 (userId 필터 적용)
      * - MANAGER/MASTER: 전체 조회 (userId 필터 없음)
+     * - 페이지 사이즈: 10/30/50 (기본값 10, PaymentSearchRequest 검증)
+     * - 정렬: createdAt(기본) / amount, asc / desc
      */
-    public List<PaymentResponse> searchPayments(UUID paymentId, UUID orderId,
-                                                PaymentStatus paymentStatus,
+    public Page<PaymentResponse> searchPayments(PaymentSearchRequest searchRequest,
                                                 Long userId, boolean isAdmin) {
         // 관리자면 userId 필터 없이 전체 조회, 그 외는 본인 결제만
         Long filterUserId = isAdmin ? null : userId;
 
-        return paymentRepository.searchPayments(paymentId, orderId, paymentStatus, filterUserId)
-                .stream()
-                .map(PaymentResponse::from)
-                .collect(Collectors.toList());
+        return paymentRepository.searchPayments(
+                        searchRequest.getPaymentId(),
+                        searchRequest.getOrderId(),
+                        searchRequest.getPaymentStatus(),
+                        filterUserId,
+                        searchRequest.toPageable())
+                .map(PaymentResponse::from);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -190,6 +210,8 @@ public class PaymentService {
             throw new CustomException(ErrorCode.PAYMENT_FORBIDDEN);
         }
 
+        // @Where(deleted_at IS NULL)에 의해 findById 자체에서 이미 삭제된 데이터는 조회 안 됨
+        // 그러나 명시적 예외 처리로 일관성 유지
         if (payment.isDeleted()) {
             throw new CustomException(ErrorCode.ALREADY_DELETED);
         }

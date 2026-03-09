@@ -6,6 +6,7 @@ import com.babjo.deliverycommerce.domain.payment.entity.PaymentHistory;
 import com.babjo.deliverycommerce.domain.payment.entity.PaymentStatus;
 import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentConfirmRequest;
 import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentCreateRequest;
+import com.babjo.deliverycommerce.domain.payment.dto.request.PaymentSearchRequest;
 import com.babjo.deliverycommerce.domain.payment.repository.PaymentHistoryRepository;
 import com.babjo.deliverycommerce.domain.payment.repository.PaymentRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
@@ -18,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +29,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -126,7 +131,7 @@ class PaymentServiceTest {
             given(paymentHistoryRepository.save(any(PaymentHistory.class))).willReturn(mockHistory);
 
             // when
-            PaymentConfirmResponse response = paymentService.confirmPayment(paymentId, request, userId);
+            PaymentConfirmResponse response = paymentService.confirmPayment(paymentId, request, userId, false);
 
             // then
             assertThat(response.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
@@ -142,7 +147,7 @@ class PaymentServiceTest {
             given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
 
             // when & then
-            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request, userId))
+            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request, userId, false))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(ErrorCode.PAYMENT_INVALID_STATUS.getMessage());
         }
@@ -155,7 +160,7 @@ class PaymentServiceTest {
             given(paymentRepository.findById(paymentId)).willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request, userId))
+            assertThatThrownBy(() -> paymentService.confirmPayment(paymentId, request, userId, false))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(ErrorCode.PAYMENT_NOT_FOUND.getMessage());
         }
@@ -188,7 +193,7 @@ class PaymentServiceTest {
             given(paymentHistoryRepository.save(any(PaymentHistory.class))).willReturn(mockHistory);
 
             // when
-            PaymentFailResponse response = paymentService.failPayment(paymentId, userId);
+            PaymentFailResponse response = paymentService.failPayment(paymentId, userId, false);
 
             // then
             assertThat(response.getStatus()).isEqualTo(PaymentStatus.FAILED);
@@ -203,7 +208,7 @@ class PaymentServiceTest {
             given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
 
             // when & then
-            assertThatThrownBy(() -> paymentService.failPayment(paymentId, userId))
+            assertThatThrownBy(() -> paymentService.failPayment(paymentId, userId, false))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(ErrorCode.PAYMENT_INVALID_STATUS.getMessage());
         }
@@ -265,33 +270,38 @@ class PaymentServiceTest {
     class SearchPayments {
 
         @Test
-        @DisplayName("정상 케이스 - 결제 목록 조회 성공 (일반 사용자)")
+        @DisplayName("정상 케이스 - 결제 목록 조회 성공 (일반 사용자, 페이지네이션)")
         void searchPayments_success_user() {
             // given
-            given(paymentRepository.searchPayments(null, null, null, userId))
-                    .willReturn(List.of(payment));
+            PaymentSearchRequest request = new PaymentSearchRequest();
+            Page<Payment> pageResult = new PageImpl<>(List.of(payment), PageRequest.of(0, 10), 1);
+            given(paymentRepository.searchPayments(isNull(), isNull(), isNull(), any(), any()))
+                    .willReturn(pageResult);
 
             // when
-            List<PaymentResponse> responses = paymentService.searchPayments(null, null, null, userId, false);
+            Page<PaymentResponse> responses = paymentService.searchPayments(request, userId, false);
 
             // then
-            assertThat(responses).hasSize(1);
+            assertThat(responses.getContent()).hasSize(1);
+            assertThat(responses.getTotalElements()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("정상 케이스 - 관리자는 전체 조회 (userId 필터 없음)")
         void searchPayments_success_admin() {
             // given
-            given(paymentRepository.searchPayments(null, null, null, null))
-                    .willReturn(List.of(payment));
+            PaymentSearchRequest request = new PaymentSearchRequest();
+            Page<Payment> pageResult = new PageImpl<>(List.of(payment), PageRequest.of(0, 10), 1);
+            given(paymentRepository.searchPayments(isNull(), isNull(), isNull(), isNull(), any()))
+                    .willReturn(pageResult);
 
             // when
-            List<PaymentResponse> responses = paymentService.searchPayments(null, null, null, userId, true);
+            Page<PaymentResponse> responses = paymentService.searchPayments(request, userId, true);
 
             // then
-            assertThat(responses).hasSize(1);
+            assertThat(responses.getContent()).hasSize(1);
             // 관리자 조회 시 userId=null 로 호출됨을 검증
-            then(paymentRepository).should().searchPayments(null, null, null, null);
+            then(paymentRepository).should().searchPayments(isNull(), isNull(), isNull(), isNull(), any());
         }
     }
 

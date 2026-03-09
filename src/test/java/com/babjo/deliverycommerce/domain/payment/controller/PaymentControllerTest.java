@@ -11,7 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -37,10 +39,10 @@ class PaymentControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private PaymentService paymentService;
 
-    @MockBean
+    @MockitoBean
     private CurrentUserResolver currentUserResolver;
 
     // ─────────────────────────────────────────────────────────────────
@@ -109,7 +111,7 @@ class PaymentControllerTest {
         UUID paymentId = UUID.randomUUID();
 
         given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
-        given(paymentService.confirmPayment(eq(paymentId), any(), eq(1L)))
+        given(paymentService.confirmPayment(eq(paymentId), any(), eq(1L), eq(false)))
                 .willReturn(PaymentConfirmResponse.builder()
                         .paymentId(paymentId)
                         .status(PaymentStatus.COMPLETED)
@@ -139,7 +141,7 @@ class PaymentControllerTest {
         UUID paymentId = UUID.randomUUID();
 
         given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
-        given(paymentService.failPayment(eq(paymentId), eq(1L)))
+        given(paymentService.failPayment(eq(paymentId), eq(1L), eq(false)))
                 .willReturn(PaymentFailResponse.builder()
                         .paymentId(paymentId)
                         .status(PaymentStatus.FAILED)
@@ -194,27 +196,32 @@ class PaymentControllerTest {
         UUID orderId = UUID.randomUUID();
 
         given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
-        given(paymentService.searchPayments(any(), any(), any(), eq(1L), eq(false)))
-                .willReturn(List.of(
-                        PaymentResponse.builder()
-                                .paymentId(paymentId)
-                                .userId(1L)
-                                .orderId(orderId)
-                                .amount(15000)
-                                .paymentMethod(PaymentMethod.CARD)
-                                .paymentStatus(PaymentStatus.READY)
-                                .pgProvider(PgProvider.TOSS)
-                                .createdAt(LocalDateTime.now())
-                                .createdBy(1L)
-                                .build()
+        given(paymentService.searchPayments(any(), eq(1L), eq(false)))
+                .willReturn(new PageImpl<>(
+                        List.of(
+                                PaymentResponse.builder()
+                                        .paymentId(paymentId)
+                                        .userId(1L)
+                                        .orderId(orderId)
+                                        .amount(15000)
+                                        .paymentMethod(PaymentMethod.CARD)
+                                        .paymentStatus(PaymentStatus.READY)
+                                        .pgProvider(PgProvider.TOSS)
+                                        .createdAt(LocalDateTime.now())
+                                        .createdBy(1L)
+                                        .build()
+                        ),
+                        PageRequest.of(0, 10),
+                        1
                 ));
 
         // when & then
         mockMvc.perform(get("/v1/payments")
                         .with(csrf()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].paymentStatus").value("READY"))
-                .andExpect(jsonPath("$.data[0].paymentMethod").value("CARD"));
+                .andExpect(jsonPath("$.data.content[0].paymentStatus").value("READY"))
+                .andExpect(jsonPath("$.data.content[0].paymentMethod").value("CARD"))
+                .andExpect(jsonPath("$.data.totalElements").value(1));
     }
 
     // ─────────────────────────────────────────────────────────────────

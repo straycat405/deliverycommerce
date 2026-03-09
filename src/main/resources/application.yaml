@@ -20,6 +20,12 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       timeout: 2000
+  ai:
+    google:
+      genai:
+        api-key: ${GOOGLE_API_KEY}
+        project-id: ${GOOGLE_PROJECT_ID}
+        location: asia-northeast3
 
 jwt:
   secret: ${JWT_SECRET}
@@ -36,8 +42,3 @@ springdoc:
     path: /v3/api-docs          # API docs 경로
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
-
-# Google Ai
-google:
-  ai:
-    api-key: ${GOOGLE_API_KEY}

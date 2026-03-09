@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.product;
 
+import com.babjo.deliverycommerce.domain.ai.repository.AiRequestLogRepository;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.domain.product.service.AiDescriptionService;
 import com.babjo.deliverycommerce.domain.product.service.ProductServiceImpl;
@@ -35,6 +36,9 @@ class ProductServiceImplTest {
 
     @Mock
     private StoreRepository storeRepository;
+
+    @Mock
+    private AiRequestLogRepository aiRequestLogRepository;
 
     @Mock
     private AiDescriptionService aiDescriptionService;
@@ -265,7 +269,7 @@ class ProductServiceImplTest {
                 .useAiDescription(false)
                 .build();
 
-        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(storeId, productId))
+        when(productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(productId, storeId))
                 .thenReturn(Optional.of(product));
         when(aiDescriptionService.generateProductDescription("트러플 크림 파스타", "트러플 향"))
                 .thenReturn("트러플 향 가득한 부드러운 크림 파스타!");

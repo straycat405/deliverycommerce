@@ -13,6 +13,8 @@ public class AiDescriptionServiceImpl implements AiDescriptionService {
 
     private final Client geminiClient;
 
+    private static final String AI_MODEL = "gemini-3-flash-preview";
+
     @Override
     public String generateProductDescription(String productName, String point) {
 
@@ -36,7 +38,7 @@ public class AiDescriptionServiceImpl implements AiDescriptionService {
                 """.formatted(productName, point);
 
             GenerateContentResponse response = geminiClient.models.generateContent(
-                    "gemini-3-flash-preview",
+                    AI_MODEL,
                     prompt,
                     null
             );

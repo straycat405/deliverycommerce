@@ -149,6 +149,19 @@ public class CartService {
                     return saved;
                 });
 
+        // 단일 가게 정책 적용 (CART_STORE_MISMATCH)
+        UUID productStoreId = product.getStore().getStoreId();
+
+        if (cart.getStoreId() == null) {
+            cart.assignStore(productStoreId); // 첫 담기 시 장바구니 기준 가게 세팅
+            log.info("장바구니 storeId 초기 세팅: userId={}, cartId={}, storeId={}", userId, cart.getCartId(), productStoreId);
+        } else if (!cart.getStoreId().equals(productStoreId)) {
+            log.info("장바구니 단일 가게 정책 위반: userId={}, cartId={}, cartStoreId={}, productStoreId={}",
+                    userId, cart.getCartId(), cart.getStoreId(), productStoreId);
+            throw new CustomException(ErrorCode.CART_STORE_MISMATCH);
+
+        }
+
         /*같은 상품이 이미 담겨 있으면 수량 증가, 없으면 생성*/
         CartItem cartItem = cartItemRepository.findByCartIdAndProductIdAndDeletedAtIsNull(cart.getCartId(), productId).orElse(null);
 

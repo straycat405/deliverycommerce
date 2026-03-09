@@ -50,7 +50,7 @@ public class ProductController {
        관리 API (OWNER/MANAGER/MASTER)
      ========================= */
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ProductResponseDto> create(
             @PathVariable UUID storeId, @Valid @RequestBody ProductCreateRequestDto request,
             @AuthenticationPrincipal UserPrincipal user)

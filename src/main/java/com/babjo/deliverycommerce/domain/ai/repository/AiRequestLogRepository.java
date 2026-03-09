@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface AiRequestLogRepository extends JpaRepository<AiRequestLog, UUID> {
 
     Page<AiRequestLog> findAllByProductIdOrderByCreatedAtDesc(UUID productId, Pageable pageable);
+    Page<AiRequestLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
 }

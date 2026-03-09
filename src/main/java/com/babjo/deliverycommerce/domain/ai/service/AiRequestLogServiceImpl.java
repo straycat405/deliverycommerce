@@ -24,4 +24,10 @@ public class AiRequestLogServiceImpl implements AiRequestLogService {
         return aiRequestLogRepository.findAllByProductIdOrderByCreatedAtDesc(productId, pageable)
                 .map(AiRequestLogResponseDto::from);
     }
+
+    @Override
+    public Page<AiRequestLogResponseDto> getAllLogs(Pageable pageable) {
+        return aiRequestLogRepository.findAllByOrderByCreatedAtDesc(pageable)
+                .map(AiRequestLogResponseDto::from);
+    }
 }

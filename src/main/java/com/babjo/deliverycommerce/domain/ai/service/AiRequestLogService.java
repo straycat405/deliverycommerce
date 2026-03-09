@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface AiRequestLogService {
     Page<AiRequestLogResponseDto> getLogs(UUID productId, Pageable pageable);
+    Page<AiRequestLogResponseDto> getAllLogs(Pageable pageable);
 }

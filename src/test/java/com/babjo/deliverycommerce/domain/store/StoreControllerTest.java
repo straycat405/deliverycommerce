@@ -22,9 +22,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -81,11 +83,11 @@ public class StoreControllerTest {
         // when & then
         mockMvc.perform(get("/v1/stores"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].name").value("한식당"))
-                .andExpect(jsonPath("$[0].category").value("한식"))
-                .andExpect(jsonPath("$[1].name").value("치킨집"))
-                .andExpect(jsonPath("$[1].category").value("치킨"));
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].name").value("한식당"))
+                .andExpect(jsonPath("$.data[0].category").value("한식"))
+                .andExpect(jsonPath("$.data[1].name").value("치킨집"))
+                .andExpect(jsonPath("$.data[1].category").value("치킨"));
     }
 
     @Test
@@ -108,16 +110,19 @@ public class StoreControllerTest {
         given(storeService.get(storeId))
                 .willReturn(response);
 
+
+        given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
+
         // when & then
         mockMvc.perform(get("/v1/stores/{storeId}", storeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.ownerId").value(1L))
-                .andExpect(jsonPath("$.category").value("한식"))
-                .andExpect(jsonPath("$.name").value("한식당"))
-                .andExpect(jsonPath("$.address").value("서울시 강남구"))
-                .andExpect(jsonPath("$.averageRating").value(4.5))
-                .andExpect(jsonPath("$.reviewCount").value(120));
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.ownerId").value(1L))
+                .andExpect(jsonPath("$.data.category").value("한식"))
+                .andExpect(jsonPath("$.data.name").value("한식당"))
+                .andExpect(jsonPath("$.data.address").value("서울시 강남구"))
+                .andExpect(jsonPath("$.data.averageRating").value(4.5))
+                .andExpect(jsonPath("$.data.reviewCount").value(120));
     }
 
     @Test
@@ -158,13 +163,13 @@ public class StoreControllerTest {
                         .contentType("application/json")
                         .content(requestBody))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.ownerId").value(1L))
-                .andExpect(jsonPath("$.category").value("한식"))
-                .andExpect(jsonPath("$.name").value("한식당"))
-                .andExpect(jsonPath("$.address").value("서울시 강남구"))
-                .andExpect(jsonPath("$.averageRating").value(0.0))
-                .andExpect(jsonPath("$.reviewCount").value(0));
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.ownerId").value(1L))
+                .andExpect(jsonPath("$.data.category").value("한식"))
+                .andExpect(jsonPath("$.data.name").value("한식당"))
+                .andExpect(jsonPath("$.data.address").value("서울시 강남구"))
+                .andExpect(jsonPath("$.data.averageRating").value(0.0))
+                .andExpect(jsonPath("$.data.reviewCount").value(0));
     }
 
     @Test
@@ -226,13 +231,13 @@ public class StoreControllerTest {
                         .contentType("application/json")
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.ownerId").value(1L))
-                .andExpect(jsonPath("$.category").value("치킨"))
-                .andExpect(jsonPath("$.name").value("치킨집"))
-                .andExpect(jsonPath("$.address").value("서울시 서초구"))
-                .andExpect(jsonPath("$.averageRating").value(4.3))
-                .andExpect(jsonPath("$.reviewCount").value(10));
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.ownerId").value(1L))
+                .andExpect(jsonPath("$.data.category").value("치킨"))
+                .andExpect(jsonPath("$.data.name").value("치킨집"))
+                .andExpect(jsonPath("$.data.address").value("서울시 서초구"))
+                .andExpect(jsonPath("$.data.averageRating").value(4.3))
+                .andExpect(jsonPath("$.data.reviewCount").value(10));
     }
 
     @Test
@@ -272,7 +277,10 @@ public class StoreControllerTest {
         // when & then
         mockMvc.perform(delete("/v1/stores/{storeId}", storeId)
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(nullValue()));
+
+        then(storeService).should().delete(eq(storeId), eq(1L));
     }
 
     @Test

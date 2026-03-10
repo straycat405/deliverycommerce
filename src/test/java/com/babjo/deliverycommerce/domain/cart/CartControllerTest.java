@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -162,7 +163,8 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(delete("/v1/cart/items/{cartItemId}", cartItemId)
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(nullValue()));
 
         //서비스 호출 검증
         then(cartService).should().deleteItem(eq(1L), eq(cartItemId));
@@ -178,7 +180,8 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(delete("/v1/cart")
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(nullValue()));
 
         //then
         then(cartService).should().clearCart(eq(1L));

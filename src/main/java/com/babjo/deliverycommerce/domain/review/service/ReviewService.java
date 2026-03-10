@@ -3,6 +3,7 @@ package com.babjo.deliverycommerce.domain.review.service;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateRequest;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
+import com.babjo.deliverycommerce.domain.review.dto.ReviewSearchRequest;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateRequest;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewUpdateResponse;
 import com.babjo.deliverycommerce.domain.review.entity.Review;
@@ -13,63 +14,62 @@ import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
-import com.babjo.deliverycommerce.global.security.UserPrincipal;
 import com.babjo.deliverycommerce.domain.user.entity.User;
 import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 // [TODO] Order 도메인 연결 후 import 추가 필요
 // import com.babjo.deliverycommerce.domain.order.entity.Order;
 // import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 // import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 
+/**
+ * 리뷰 서비스
+ * - 팀룰: 클래스 레벨 @Transactional(readOnly = true), CUD 메서드에 @Transactional 개별 적용
+ * - 팀룰: UserPrincipal 직접 의존 없이 userId(Long) + role(String) 파라미터로 처리
+ *         (Controller에서 CurrentUserResolver / UserPrincipal.getRole() 추출 후 전달)
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ReviewService {
+
     private final ReviewRepository reviewRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
 //    private final OrderRepository orderRepository;
     private final ReviewMapper reviewMapper;
 
+    // ─────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────
+
     @Transactional
-    public ReviewCreateResponse createReview(
-            UserPrincipal principal,
-            ReviewCreateRequest createRequest
-    ) {
-        User user = userRepository.findById(principal.getUserId())
+    public ReviewCreateResponse createReview(Long userId, ReviewCreateRequest createRequest) {
+
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
 //        Order order = orderRepository.findById(createRequest.getOrderId())
 //                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-
-        // 주문 상태 COMPLETED 확인 (실패조건: 완료되지 않은 주문)
-        // if (order.getStatus() != OrderStatus.COMPLETED) {
-        //     throw new CustomException(ErrorCode.ORDER_NOT_FOUND);
-        // }
-
-        // 중복 리뷰 방지 - 1주문 1리뷰 (실패조건: 해당 주문에 이미 리뷰 존재)
-        // [TODO] Order 연결 후 주석 해제
-        // boolean alreadyExists = reviewRepository.existsByOrderAndDeletedAtIsNull(order);
-        // if (alreadyExists) {
-        //     throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
-        // }
+//        if (order.getStatus() != OrderStatus.COMPLETED) {
+//            throw new CustomException(ErrorCode.ORDER_NOT_COMPLETED);
+//        }
+//        boolean alreadyExists = reviewRepository.existsByOrder(order);
+//        if (alreadyExists) {
+//            throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
+//        }
 
         Store store = storeRepository.findByStoreIdAndDeletedAtIsNull(createRequest.getStoreId())
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        Review review = reviewMapper.toEntity(
-                createRequest,
-                user,
-//                order,
-                store
-        );
+        Review review = reviewMapper.toEntity(createRequest, user, store);
         Review savedReview = reviewRepository.save(review);
 
         store.addReview(savedReview.getRating());
@@ -78,84 +78,73 @@ public class ReviewService {
         return reviewMapper.toCreateResponse(savedReview);
     }
 
-    public List<ReviewResponse> getReviews(UserPrincipal principal, UUID reviewId, UUID storeId) {
-        // reviewId 단건 조회 — 본인 리뷰이거나 MANAGER/MASTER만 접근 가능
-        if (reviewId != null) {
-            Review review = reviewRepository.findByReviewId(reviewId)
+    // ─────────────────────────────────────────────────────────────────
+    // READ / SEARCH
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * 조건 기반 동적 리뷰 목록 조회 (페이지네이션 + 정렬)
+     * - reviewId: 단건 조회 (우선순위 1) — 본인 또는 MANAGER/MASTER
+     * - storeId: 가게별 목록 조회 (우선순위 2) — 전체 공개
+     * - 파라미터 없음: CUSTOMER → 본인 리뷰만, MANAGER/MASTER → 전체
+     *
+     * @param userId  로그인 사용자 ID (CurrentUserResolver 추출)
+     * @param role    로그인 사용자 Role (UserPrincipal.getRole() 추출) — "ROLE_MANAGER" 형태
+     * @param search  검색 조건 (reviewId, storeId, page, size, sortBy, sortDir)
+     */
+    public Page<ReviewResponse> getReviews(Long userId, String role, ReviewSearchRequest search) {
+
+        // 단건 조회 — reviewId가 존재하면 1건 Page로 래핑해 반환
+        if (search.getReviewId() != null) {
+            Review review = reviewRepository.findByReviewId(search.getReviewId())
                     .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-            boolean isAdminRole = isAdminRole(principal);
-            if (!isAdminRole && !review.getUser().getUserId().equals(principal.getUserId())) {
+            if (!isAdminRole(role) && !review.getUser().getUserId().equals(userId)) {
                 throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
             }
 
-            return List.of(reviewMapper.toResponse(review));
+            return new PageImpl<>(
+                    List.of(reviewMapper.toResponse(review)),
+                    search.toPageable(),
+                    1
+            );
         }
 
-        // storeId 필터 조회 — 해당 가게의 리뷰 목록 (전체 공개)
-        if (storeId != null) {
-            return reviewRepository.findAllByStore_StoreId(storeId)
-                    .stream()
-                    .map(reviewMapper::toResponse)
-                    .collect(Collectors.toList());
+        // 가게별 목록 조회 — 전체 공개
+        if (search.getStoreId() != null) {
+            return reviewRepository.findAllByStore_StoreId(search.getStoreId(), search.toPageable())
+                    .map(reviewMapper::toResponse);
         }
 
         // 파라미터 없는 전체 조회
-        // CUSTOMER: 본인이 작성한 리뷰만 반환
-        // MANAGER / MASTER: 전체 리뷰 반환
-        if (isAdminRole(principal)) {
-            return reviewRepository.findAll()
-                    .stream()
-                    .map(reviewMapper::toResponse)
-                    .collect(Collectors.toList());
+        // MANAGER/MASTER: 전체 리뷰
+        // CUSTOMER/OWNER: 본인이 작성한 리뷰만
+        if (isAdminRole(role)) {
+            return reviewRepository.findAll(search.toPageable())
+                    .map(reviewMapper::toResponse);
         }
 
-        return reviewRepository.findAllByUser_UserId(principal.getUserId())
-                .stream()
-                .map(reviewMapper::toResponse)
-                .collect(Collectors.toList());
+        return reviewRepository.findAllByUser_UserId(userId, search.toPageable())
+                .map(reviewMapper::toResponse);
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────
+
     @Transactional
-    public void deleteReview(UUID reviewId, UserPrincipal principal) {
-        // @Where(deleted_at IS NULL) 적용으로 이미 삭제된 리뷰는 REVIEW_NOT_FOUND 반환
+    public ReviewUpdateResponse updateReview(Long userId, String role, UUID reviewId,
+                                             ReviewUpdateRequest updateRequest) {
         Review review = reviewRepository.findByReviewId(reviewId)
                 .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
 
-        // 작성자 또는 MANAGER/MASTER만 삭제 가능
-        if (!review.getUser().getUserId().equals(principal.getUserId()) && !isAdminRole(principal)) {
-            throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
-        }
-
-        Store store = review.getStore();
-        store.removeReview(review.getRating());
-        storeRepository.save(store);
-
-        review.delete(principal.getUserId());
-        reviewRepository.save(review);
-    }
-
-    @Transactional
-    public ReviewUpdateResponse updateReview(
-            UserPrincipal principal,
-            UUID reviewId,
-            ReviewUpdateRequest updateRequest
-    ) {
-        // 실패조건: 존재하지 않는 리뷰
-        Review review = reviewRepository.findByReviewId(reviewId)
-                .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
-
-        // 작성자 또는 MANAGER/MASTER만 수정 가능
-        if (!review.getUser().getUserId().equals(principal.getUserId()) && !isAdminRole(principal)) {
+        if (!review.getUser().getUserId().equals(userId) && !isAdminRole(role)) {
             throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
         }
 
         int oldRating = review.getRating();
-
-        // 수정 처리 (updatedAt은 @LastModifiedDate 로 자동 갱신)
         review.updateReview(updateRequest.getRating(), updateRequest.getContent());
 
-        // 별점이 변경된 경우에만 Store 통계 갱신
         Integer newRating = updateRequest.getRating();
         if (newRating != null && oldRating != newRating) {
             Store store = review.getStore();
@@ -166,12 +155,37 @@ public class ReviewService {
         return reviewMapper.toUpdateResponse(review);
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // DELETE (Soft Delete)
+    // ─────────────────────────────────────────────────────────────────
+
+    @Transactional
+    public void deleteReview(UUID reviewId, Long userId, String role) {
+        Review review = reviewRepository.findByReviewId(reviewId)
+                .orElseThrow(() -> new CustomException(ErrorCode.REVIEW_NOT_FOUND));
+
+        if (!review.getUser().getUserId().equals(userId) && !isAdminRole(role)) {
+            throw new CustomException(ErrorCode.REVIEW_FORBIDDEN);
+        }
+
+        Store store = review.getStore();
+        store.removeReview(review.getRating());
+        storeRepository.save(store);
+
+        review.delete(userId);
+        reviewRepository.save(review);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // 내부 헬퍼
+    // ─────────────────────────────────────────────────────────────────
+
     /**
      * MANAGER 또는 MASTER 권한 여부 확인
-     * UserPrincipal의 role은 "ROLE_MANAGER" 형태이므로 Authority 상수와 비교합니다.
+     * role은 "ROLE_MANAGER" 형태 (UserPrincipal.getRole() 반환값)
      */
-    private boolean isAdminRole(UserPrincipal principal) {
-        String role = principal.getRole();
-        return UserEnumRole.Authority.MANAGER.equals(role) || UserEnumRole.Authority.MASTER.equals(role);
+    private boolean isAdminRole(String role) {
+        return UserEnumRole.Authority.MANAGER.equals(role)
+                || UserEnumRole.Authority.MASTER.equals(role);
     }
 }

@@ -23,6 +23,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -223,8 +224,14 @@ class PaymentServiceTest {
 
         @Test
         @DisplayName("정상 케이스 - READY → CANCELED (5분 이내)")
-        void cancelPayment_success() {
+        void cancelPayment_success() throws Exception {
             // given
+            // BaseEntity.createdAt 은 JPA Auditing 에 의해 세팅되므로
+            // 단위 테스트에서는 리플렉션으로 현재 시각으로 직접 세팅
+            var createdAtField = payment.getClass().getSuperclass().getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(payment, LocalDateTime.now());
+
             given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
             given(paymentHistoryRepository.save(any(PaymentHistory.class))).willReturn(mockHistory);
 
@@ -233,6 +240,23 @@ class PaymentServiceTest {
 
             // then
             assertThat(response.getStatus()).isEqualTo(PaymentStatus.CANCELED);
+        }
+
+        @Test
+        @DisplayName("실패 케이스 - 생성 후 5분 초과 시 취소 불가 예외")
+        void cancelPayment_fail_timeExpired() throws Exception {
+            // given
+            // createdAt 을 6분 전으로 세팅하여 5분 초과 상황 재현
+            var createdAtField = payment.getClass().getSuperclass().getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(payment, LocalDateTime.now().minusMinutes(6));
+
+            given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
+
+            // when & then
+            assertThatThrownBy(() -> paymentService.cancelPayment(paymentId, null, userId, false))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessageContaining(ErrorCode.PAYMENT_CANCEL_TIME_EXPIRED.getMessage());
         }
 
         @Test
@@ -349,6 +373,19 @@ class PaymentServiceTest {
             assertThatThrownBy(() -> paymentService.deletePayment(paymentId, userId, false))
                     .isInstanceOf(CustomException.class)
                     .hasMessageContaining(ErrorCode.ALREADY_DELETED.getMessage());
+        }
+
+        @Test
+        @DisplayName("실패 케이스 - 타인 결제 삭제 시도 시 예외 (비관리자)")
+        void deletePayment_fail_forbidden() {
+            // given
+            Long otherUserId = 999L;
+            given(paymentRepository.findById(paymentId)).willReturn(Optional.of(payment));
+
+            // when & then
+            assertThatThrownBy(() -> paymentService.deletePayment(paymentId, otherUserId, false))
+                    .isInstanceOf(CustomException.class)
+                    .hasMessageContaining(ErrorCode.PAYMENT_FORBIDDEN.getMessage());
         }
     }
 }

@@ -12,7 +12,7 @@ spring:
   jpa:
     hibernate:
       # 운영환경에서는 스키마를 자동 변경하지 않음 (validate: 엔티티-테이블 매핑만 검증)
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false             # 운영에서는 SQL 포매팅 비활성화 (성능)

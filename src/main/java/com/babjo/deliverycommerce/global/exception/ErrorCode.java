@@ -80,6 +80,14 @@ public enum ErrorCode {
     REVIEW_ALREADY_EXISTS(HttpStatus.CONFLICT, "REVIEW_ALREADY_EXISTS", "이미 리뷰를 작성했습니다."),
     REVIEW_FORBIDDEN(HttpStatus.FORBIDDEN, "REVIEW_FORBIDDEN", "해당 리뷰에 대한 권한이 없습니다."),
 
+    // ── Payment ───────────────────────────────────────
+    PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "PAYMENT_NOT_FOUND", "존재하지 않는 결제입니다."),
+    PAYMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "PAYMENT_ALREADY_EXISTS", "해당 주문에 이미 결제가 존재합니다."),
+    PAYMENT_INVALID_STATUS(HttpStatus.BAD_REQUEST, "PAYMENT_INVALID_STATUS", "현재 결제 상태에서는 해당 작업을 수행할 수 없습니다."),
+    PAYMENT_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "PAYMENT_ALREADY_CANCELED", "이미 취소된 결제입니다."),
+    PAYMENT_CANCEL_TIME_EXPIRED(HttpStatus.BAD_REQUEST, "PAYMENT_CANCEL_TIME_EXPIRED", "결제 취소 가능 시간(5분)이 초과되었습니다."),
+    PAYMENT_FORBIDDEN(HttpStatus.FORBIDDEN, "PAYMENT_FORBIDDEN", "해당 결제에 대한 권한이 없습니다."),
+
     // ── AiLog  ──────────────────────────────────────────
     AI_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI_GENERATION_FAILED", "AI 설명 생성에 실패했습니다. 잠시 후 다시 시도해주세요."),
     AI_LOG_FORBIDDEN(HttpStatus.FORBIDDEN, "AI_LOG_FORBIDDEN", "AI 로그 조회 권한이 없습니다."),
@@ -92,9 +100,10 @@ public enum ErrorCode {
     INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "INVALID_ORDER_STATUS", "현재 주문 상태에서는 수행할 수 없는 작업입니다."),
     ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_ACCESS_DENIED", "주문에 대한 접근 권한이 없습니다."),
     INVALID_COOKING_TIME(HttpStatus.BAD_REQUEST, "INVALID_COOKING_TIME", "올바른 조리 시간을 입력해주세요. ( 1분 이상 )"),
-    PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "PRICE_MISMATCH", "상품 가격 정보가 일치하지 않습니다.");
+    PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "PRICE_MISMATCH", "상품 가격 정보가 일치하지 않습니다."),
+    ORDER_NOT_COMPLETED(HttpStatus.BAD_REQUEST, "ORDER_NOT_COMPLETED", "픽업이 완료된 주문에만 리뷰를 작성할 수 있습니다.");
 
     private final HttpStatus status;
     private final String code;
     private final String message;
-}
+    }

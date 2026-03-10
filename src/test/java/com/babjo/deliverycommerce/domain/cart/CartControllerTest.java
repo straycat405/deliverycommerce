@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -62,12 +63,12 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(get("/v1/cart"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cartId").value(cartId.toString()))
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.items[0].cartItemId").value(cartItemId.toString()))
-                .andExpect(jsonPath("$.items[0].productId").value(productId.toString()))
-                .andExpect(jsonPath("$.items[0].quantity").value(2));
+                .andExpect(jsonPath("$.data.cartId").value(cartId.toString()))
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].cartItemId").value(cartItemId.toString()))
+                .andExpect(jsonPath("$.data.items[0].productId").value(productId.toString()))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(2));
     }
 
     @Test
@@ -83,9 +84,9 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(get("/v1/cart"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cartId").doesNotExist())
-                .andExpect(jsonPath("$.storeId").doesNotExist())
-                .andExpect(jsonPath("$.items.length()").value(0));
+                .andExpect(jsonPath("$.data.cartId").doesNotExist())
+                .andExpect(jsonPath("$.data.storeId").doesNotExist())
+                .andExpect(jsonPath("$.data.items.length()").value(0));
     }
 
     @Test
@@ -116,11 +117,11 @@ public class CartControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cartId").value(cartId.toString()))
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.items[0].productId").value(productId.toString()))
-                .andExpect(jsonPath("$.items[0].quantity").value(3));
+                .andExpect(jsonPath("$.data.cartId").value(cartId.toString()))
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].productId").value(productId.toString()))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(3));
 
         then(cartService).should()
                 .updateQuantity(eq(1L), eq(cartItemId), any(CartItemQuantityUpdateRequestDto.class));
@@ -162,7 +163,8 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(delete("/v1/cart/items/{cartItemId}", cartItemId)
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(nullValue()));
 
         //서비스 호출 검증
         then(cartService).should().deleteItem(eq(1L), eq(cartItemId));
@@ -178,7 +180,8 @@ public class CartControllerTest {
         //when & then
         mockMvc.perform(delete("/v1/cart")
                         .with(csrf()))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(nullValue()));
 
         //then
         then(cartService).should().clearCart(eq(1L));
@@ -218,12 +221,12 @@ public class CartControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.cartId").value(cartId.toString()))
-                .andExpect(jsonPath("$.storeId").value(storeId.toString()))
-                .andExpect(jsonPath("$.items.length()").value(1))
-                .andExpect(jsonPath("$.items[0].cartItemId").value(cartItemId.toString()))
-                .andExpect(jsonPath("$.items[0].productId").value(productId.toString()))
-                .andExpect(jsonPath("$.items[0].quantity").value(2));
+                .andExpect(jsonPath("$.data.cartId").value(cartId.toString()))
+                .andExpect(jsonPath("$.data.storeId").value(storeId.toString()))
+                .andExpect(jsonPath("$.data.items.length()").value(1))
+                .andExpect(jsonPath("$.data.items[0].cartItemId").value(cartItemId.toString()))
+                .andExpect(jsonPath("$.data.items[0].productId").value(productId.toString()))
+                .andExpect(jsonPath("$.data.items[0].quantity").value(2));
 
         // then: 컨트롤러가 서비스 메서드를 실제로 호출했는지 확인(선택이지만 강력 추천)
         then(cartService).should().addItem(eq(1L), any(CartItemAddRequestDto.class));

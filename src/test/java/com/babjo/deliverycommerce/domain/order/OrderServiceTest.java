@@ -9,6 +9,8 @@ import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 import com.babjo.deliverycommerce.domain.order.service.OrderService;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
+import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,9 @@ public class OrderServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private StoreRepository storeRepository;
 
     @Test
     @DisplayName("주문 생성 성공 테스트")
@@ -142,10 +147,16 @@ public class OrderServiceTest {
     @DisplayName("주문 접수 성공")
     void acceptOrder_success() {
         UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
         Long ownerId = 100L;
-        Order order = spy(Order.createOrder(1L, UUID.randomUUID(), "주소", "메시지", List.of()));
 
+        Order order = spy(Order.createOrder(1L, storeId, "주소", "메시지", List.of()));
         given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(mockStore));
+
         OrderRequestDto.AcceptOrder request = new OrderRequestDto.AcceptOrder(30);
 
         OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request);
@@ -153,17 +164,48 @@ public class OrderServiceTest {
         assertThat(result.getStatus()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(order.getCookingMinutes()).isEqualTo(30);
         assertThat(order.getAcceptedBy()).isEqualTo(ownerId);
+
+        verify(storeRepository).findByStoreIdAndDeletedAtIsNull(storeId);
+    }
+
+    @Test
+    @DisplayName("주문 접수 실패 - 가게 소유주가 아닐 때")
+    void acceptOrder_fail_notStoreOwner() {
+
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long realOwnerId = 100L;
+        Long fakeOwnerId = 999L;
+
+        Order order = mock(Order.class);
+        given(order.getStoreId()).willReturn(storeId);
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(realOwnerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
+                .willReturn(Optional.of(mockStore));
+
+        assertThatThrownBy(() -> orderService.acceptOrder(orderId, fakeOwnerId, new OrderRequestDto.AcceptOrder(30)))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("해당 가게에 대한 권한이 없습니다.");
     }
 
     @Test
     @DisplayName("주문 상태 변경 성공 - 조리 시작")
     void updateOrderStatus_preparing() {
         UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
         Long ownerId = 100L;
-        Order order = spy(Order.createOrder(1L, UUID.randomUUID(), "주소", "메시지", List.of()));
+
+        Order order = spy(Order.createOrder(1L, storeId, "주소", "메시지", List.of()));
         order.accept(ownerId, 30); // 접수된 상태여야 조리 시작 가능
 
         given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(mockStore));
 
         orderService.updateOrderStatus(orderId, ownerId, OrderStatus.PREPARING);
 

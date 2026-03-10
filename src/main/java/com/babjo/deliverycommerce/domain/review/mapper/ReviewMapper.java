@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.review.mapper;
 
+import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateRequest;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
@@ -16,8 +17,7 @@ public class ReviewMapper {
         return ReviewResponse.builder()
                 .reviewId(review.getReviewId())
                 .userId(review.getUser().getUserId())
-                // [TODO] Order 연결 후 주석 해제
-                // .orderId(review.getOrder().getOrderId())
+                .orderId(review.getOrder().getOrderId())
                 .storeId(review.getStore().getStoreId())
                 .rating(review.getRating())
                 .content(review.getContent())
@@ -29,12 +29,12 @@ public class ReviewMapper {
     public Review toEntity(
             ReviewCreateRequest createRequest,
             User user,
-//            Order order,
+            Order order,
             Store store
     ) {
         return Review.create(
                 user,
-//                order,
+                order,
                 store,
                 createRequest.getRating(),
                 createRequest.getContent()
@@ -45,8 +45,7 @@ public class ReviewMapper {
         return ReviewCreateResponse.builder()
                 .reviewId(review.getReviewId())
                 .userId(review.getUser().getUserId())
-                // [TODO] Order 연결 후 주석 해제
-                // .orderId(review.getOrder().getOrderId())
+                .orderId(review.getOrder().getOrderId())
                 .storeId(review.getStore().getStoreId())
                 .rating(review.getRating())
                 .content(review.getContent())

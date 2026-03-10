@@ -65,38 +65,48 @@
 | 분류 | 기술 |
 |:---:|:---:|
 | Server | AWS EC2 (Free tier) |
-| Database | AWS RDS (PostgreSQL) |
-| Cache | AWS ElastiCache (Redis) |
-| CI/CD | GitHub Actions |
+| Container | Docker, Docker Compose |
+| CI/CD | GitHub Actions + Docker Hub |
 
 ---
 
 ## 🏗️ 아키텍처
 
 ```
-┌────────────────────────────────────────────┐
-│              GitHub Actions                │
-│  push/PR → Build & Test → Deploy to EC2    │
-└──────────────────┬─────────────────────────┘
-                   │ SSH / SCP
-┌──────────────────▼─────────────────────────┐
-│              AWS EC2 (t2.micro)            │
-│         Spring Boot Application            │
-│                 :8080                      │
-└───────────┬──────────────┬─────────────────┘
-            │              │
-┌───────────▼──┐   ┌───────▼──────┐
-│  AWS RDS     │   │ AWS          │
-│  PostgreSQL  │   │ ElastiCache  │
-│  :5432       │   │ Redis :6379  │
-└──────────────┘   └──────────────┘
+┌─────────────────────────────────────────────────────┐
+│                   GitHub Actions                    │
+│  push/PR → Build & Test                             │
+│  main push → bootJar → Docker 빌드 → Docker Hub push │
+└───────────────────────┬─────────────────────────────┘
+                        │ SSH (appleboy/ssh-action)
+                        │ docker pull + docker compose up -d --no-deps app
+┌───────────────────────▼─────────────────────────────┐
+│               AWS EC2 (t2.micro)                    │
+│  ┌─────────────────────────────────────────────┐    │
+│  │  app (straycat405/deliverycommerce:latest)  │    │
+│  │  Spring Boot  :8080 → 외부 공개              │    │
+│  └─────────────────────────────────────────────┘    │
+│  ┌──────────────────────┐  ┌─────────────────────┐  │
+│  │  postgres:16         │  │  redis:7            │  │
+│  │  PostgreSQL  :5432   │  │  Redis       :6379  │  │
+│  │  (내부 통신 전용)      │  │  (내부 통신 전용)     │  │
+│  └──────────────────────┘  └─────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+
+         ┌──────────────────────┐
+         │     Docker Hub       │
+         │  :latest / :{sha}    │
+         └──────────────────────┘
 ```
 
 ### CI/CD Workflow
 ```
-feature/* → develop (PR)   : Build & Test 자동 실행
-develop   → main (PR)   : Build & Test 자동 실행
-main merge              : Build & Test → Deploy to EC2 자동 실행
+feature/* → develop (PR)  : Build & Test 자동 실행
+develop   → main    (PR)  : Build & Test 자동 실행
+main merge                : Build & Test → bootJar → Docker 이미지 빌드
+                            → Docker Hub push (latest + {sha} 태그)
+                            → EC2 SSH 접속 → .env 갱신 → docker pull
+                            → docker compose up -d --no-deps app (앱만 재시작, DB/Redis 유지)
 ```
 
 ---
@@ -112,7 +122,10 @@ main merge              : Build & Test → Deploy to EC2 자동 실행
 ```
 com.babjo.deliverycommerce
 ├── domain
+│   ├── ai            # AI 요청 이력 (AiRequestLog)
 │   ├── cart          # 장바구니 (Cart, CartItem)
+│   ├── order         # 주문 (Order, OrderItem)
+│   ├── payment       # 결제 (Payment, PaymentHistory)
 │   ├── product       # 상품 + AI 설명 생성
 │   ├── review        # 리뷰 & 평점
 │   ├── store         # 가게
@@ -162,6 +175,7 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 SPRING_PROFILES_ACTIVE=dev
 GOOGLE_API_KEY=your_google_api_key
+GOOGLE_PROJECT_ID=your_google_project_id
 ```
 
 ### 3. PostgreSQL & Redis 실행 (Docker)
@@ -219,10 +233,21 @@ http://localhost:8080/swagger-ui/index.html
 - Soft Delete
 
 ### 📦 주문 (Order)
-- 개발 중
+- 주문 생성 (장바구니 기반, 가격 정합성 검증)
+- 본인 주문 목록 조회 (페이징)
+- 주문 상세 조회
+- 주문 취소 (CUSTOMER - CREATED 상태에서만)
+- 주문 상태 변경 (OWNER - 접수 → 조리중 → 픽업대기 → 픽업완료)
+- 주문 내역 Soft Delete
 
 ### 💳 결제 (Payment)
-- 개발 중
+- 결제 생성 (READY 상태, 주문 중복 방지)
+- 결제 승인 (READY → COMPLETED)
+- 결제 실패 처리 (READY → FAILED)
+- 결제 취소 (생성 후 5분 이내만 가능, READY/COMPLETED → CANCELED)
+- 결제 목록 조회 (QueryDSL 동적 필터링, 페이지 사이즈 10/30/50)
+- 결제 Soft Delete
+- 상태 변경 이력 Insert-Only 저장 (PaymentHistory)
 
 ### ⭐ 리뷰 (Review)
 - 리뷰 작성 / 수정 / 삭제

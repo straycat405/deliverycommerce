@@ -7,6 +7,8 @@ import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 import com.babjo.deliverycommerce.domain.order.service.OrderService;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,30 +36,74 @@ public class OrderServiceTest {
     @Mock
     private OrderRepository orderRepository;
 
+    @Mock
+    private ProductRepository productRepository;
+
     @Test
     @DisplayName("주문 생성 성공 테스트")
-    void createOrder_success(){
+    void createOrder_success() {
         Long userId = 1L;
         UUID storeId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Integer price = 20000;
 
-        OrderRequestDto.OrderItemRequest itemDto = new OrderRequestDto.OrderItemRequest(
-                UUID.randomUUID() ,"치킨", 20000, 1
-        );
+        OrderRequestDto.OrderItemRequest itemDto = OrderRequestDto.OrderItemRequest.builder()
+                .productId(productId)
+                .productName("치킨")
+                .orderPrice(price)
+                .orderCount(1)
+                .build();
 
-        OrderRequestDto.CreateOrder request = new OrderRequestDto.CreateOrder(
-                storeId, "인천시", "없습니다.", List.of(itemDto)
-        );
+        OrderRequestDto.CreateOrder request = OrderRequestDto.CreateOrder.builder()
+                .storeId(storeId)
+                .address("인천시")
+                .message("없습니다.")
+                .orderItems(List.of(itemDto))
+                .build();
+
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getPrice()).willReturn(price);
+        given(productRepository.findById(productId)).willReturn(Optional.of(mockProduct));
+
         Order order = Order.createOrder(userId, storeId, "인천시", "없습니다.",
-                List.of(OrderItem.createOrderItem(itemDto.getProductId(), itemDto.getProductName(),
-                        itemDto.getOrderPrice(), itemDto.getOrderCount())));
+                List.of(OrderItem.createOrderItem(productId, "치킨", price, 1)));
+
         given(orderRepository.save(any(Order.class))).willReturn(order);
 
-        OrderResponseDto.OrderDetail result =  orderService.createOrder(userId, request);
+        OrderResponseDto.OrderDetail result = orderService.createOrder(userId, request);
 
         assertThat(result).isNotNull();
         assertThat(result.getUserId()).isEqualTo(userId);
-        assertThat(result.getTotalPrice()).isEqualTo(20000);
+        assertThat(result.getTotalPrice()).isEqualTo(price);
+
+        verify(productRepository).findById(productId);
         verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("주문 생성 실패 - 상품 가격 불일치")
+    void createOrder_fail_priceMismatch() {
+        // given
+        Long userId = 1L;
+        UUID productId = UUID.randomUUID();
+
+        OrderRequestDto.OrderItemRequest itemDto = OrderRequestDto.OrderItemRequest.builder()
+                .productId(productId)
+                .orderPrice(100) // 사용자가 100원으로 조작해서 보냄
+                .build();
+
+        OrderRequestDto.CreateOrder request = OrderRequestDto.CreateOrder.builder()
+                .orderItems(List.of(itemDto))
+                .build();
+
+        Product mockProduct = mock(Product.class);
+        given(mockProduct.getPrice()).willReturn(20000); // 실제 가격은 20000원
+        given(productRepository.findById(productId)).willReturn(Optional.of(mockProduct));
+
+        // when & then
+        assertThatThrownBy(() -> orderService.createOrder(userId, request))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("상품 가격 정보가 일치하지 않습니다."); // ErrorCode 메시지 확인
     }
 
     @Test

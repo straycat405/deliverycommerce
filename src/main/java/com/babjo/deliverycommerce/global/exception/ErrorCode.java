@@ -70,7 +70,8 @@ public enum ErrorCode {
     NOT_ORDER_USER(HttpStatus.FORBIDDEN, "NOT_ORDER_USER", "본인의 주문에 대해서만 처리 가능합니다."),
     INVALID_ORDER_STATUS(HttpStatus.BAD_REQUEST, "INVALID_ORDER_STATUS", "현재 주문 상태에서는 수행할 수 없는 작업입니다."),
     ORDER_ACCESS_DENIED(HttpStatus.FORBIDDEN, "ORDER_ACCESS_DENIED", "주문에 대한 접근 권한이 없습니다."),
-    INVALID_COOKING_TIME(HttpStatus.BAD_REQUEST, "INVALID_COOKING_TIME", "올바른 조리 시간을 입력해주세요. ( 1분 이상 )");
+    INVALID_COOKING_TIME(HttpStatus.BAD_REQUEST, "INVALID_COOKING_TIME", "올바른 조리 시간을 입력해주세요. ( 1분 이상 )"),
+    PRICE_MISMATCH(HttpStatus.BAD_REQUEST, "PRICE_MISMATCH", "상품 가격 정보가 일치하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

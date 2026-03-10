@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
+import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -24,25 +26,24 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
-
+    private final ProductRepository productRepository;
     // 주문 생성
     @Transactional
     public OrderResponseDto.OrderDetail createOrder(Long userId, OrderRequestDto.CreateOrder request){
         List<OrderItem> orderItems = request.getOrderItems().stream()
                 .map(itemDto ->{
-//                      TODO : Product 작업 완료시 상품 검증 로직 활성화
-//                      Product product = productRepository.findById(itemDto.getProductId())
-//                                      .orElse.Throw(() -> new IllegalArgumentException("상품 없음"));
-//                      if(product.getPrice() != itemDto.getOrderPrice()){
-//                          throw new IllegalArgumentException("가격 불일치");
-//                      }
 
-                        return OrderItem.createOrderItem(
-                        itemDto.getProductId(),
-                        itemDto.getProductName(),
-                        itemDto.getOrderPrice(),
-                        itemDto.getOrderCount()
-                        );
+                    Product product = productRepository.findById(itemDto.getProductId())
+                                      .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+                    if(product.getPrice().equals(itemDto.getOrderPrice())){
+                          throw new CustomException(ErrorCode.PRICE_MISMATCH);
+                    }
+                    return OrderItem.createOrderItem(
+                            itemDto.getProductId(),
+                            itemDto.getProductName(),
+                            itemDto.getOrderPrice(),
+                            itemDto.getOrderCount()
+                    );
                 })
                 .toList();
         Order order = Order.createOrder(

@@ -1,16 +1,24 @@
-# application-prod.yml (운영환경)
+# application-prod.yaml (운영환경 - AWS EC2)
+# 환경변수는 GitHub Actions → EC2 실행 시 -D 플래그로 주입됨
 
-# 추후 AWS EC2 배포 후 설정에 맞게 수정 예정
-#spring:
-#  datasource:
-#    driver-class-name: org.postgresql.Driver
-#    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-#    username: ${DB_USERNAME}
-#    password: ${DB_PASSWORD}
-#
-#  jpa:
-#    hibernate:
-#      ddl-auto: validate  # 운영에서는 validate 권장
-#    properties:
-#      hibernate:
-#        format_sql: false
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    # RDS 엔드포인트를 DB_HOST 에 설정
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      # 운영환경에서는 스키마를 자동 변경하지 않음 (validate: 엔티티-테이블 매핑만 검증)
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false             # 운영에서는 SQL 포매팅 비활성화 (성능)
+
+  # p6spy 쿼리 로깅은 운영환경에서 비활성화
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: false

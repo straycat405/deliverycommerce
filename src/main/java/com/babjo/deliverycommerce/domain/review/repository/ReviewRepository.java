@@ -45,4 +45,5 @@ public interface ReviewRepository extends JpaRepository<Review, UUID> {
 
     // [TODO] Order 도메인 연결 후 주석 해제 - 중복 리뷰 방지용
     // boolean existsByOrder(Order order);
+    boolean existsByOrder_OrderId(UUID orderId);
 }

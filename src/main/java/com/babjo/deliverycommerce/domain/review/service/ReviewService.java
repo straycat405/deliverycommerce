@@ -1,5 +1,8 @@
 package com.babjo.deliverycommerce.domain.review.service;
 
+import com.babjo.deliverycommerce.domain.order.entity.Order;
+import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
+import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateRequest;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewCreateResponse;
 import com.babjo.deliverycommerce.domain.review.dto.ReviewResponse;
@@ -24,10 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
-// [TODO] Order 도메인 연결 후 import 추가 필요
-// import com.babjo.deliverycommerce.domain.order.entity.Order;
-// import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
-// import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 
 /**
  * 리뷰 서비스
@@ -43,7 +42,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
-//    private final OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
     private final ReviewMapper reviewMapper;
 
     // ─────────────────────────────────────────────────────────────────
@@ -56,20 +55,29 @@ public class ReviewService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-//        Order order = orderRepository.findById(createRequest.getOrderId())
-//                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
-//        if (order.getStatus() != OrderStatus.COMPLETED) {
-//            throw new CustomException(ErrorCode.ORDER_NOT_COMPLETED);
-//        }
-//        boolean alreadyExists = reviewRepository.existsByOrder(order);
-//        if (alreadyExists) {
-//            throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
-//        }
+        // 주문 조회 및 검증
+        Order order = orderRepository.findById(createRequest.getOrderId())
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 본인 주문인지 확인
+        if (!order.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.NOT_ORDER_USER);
+        }
+
+        // 픽업 완료 상태만 리뷰 작성 가능
+        if (order.getStatus() != OrderStatus.PICKED_UP) {
+            throw new CustomException(ErrorCode.ORDER_NOT_COMPLETED);
+        }
+
+        // 이미 리뷰가 존재하는 주문인지 확인
+        if (reviewRepository.existsByOrder_OrderId(order.getOrderId())) {
+            throw new CustomException(ErrorCode.REVIEW_ALREADY_EXISTS);
+        }
 
         Store store = storeRepository.findByStoreIdAndDeletedAtIsNull(createRequest.getStoreId())
                 .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
-        Review review = reviewMapper.toEntity(createRequest, user, store);
+        Review review = reviewMapper.toEntity(createRequest, user, order, store);
         Review savedReview = reviewRepository.save(review);
 
         store.addReview(savedReview.getRating());

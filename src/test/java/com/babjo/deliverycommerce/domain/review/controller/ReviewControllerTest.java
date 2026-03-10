@@ -100,6 +100,7 @@ class ReviewControllerTest {
         void createReview_success() throws Exception {
             UUID storeId  = UUID.randomUUID();
             UUID reviewId = UUID.randomUUID();
+            UUID orderId  = UUID.randomUUID();
             ReviewCreateResponse response = ReviewCreateResponse.builder()
                     .reviewId(reviewId).userId(CUSTOMER_ID).storeId(storeId)
                     .rating(4).content("good").createdAt(LocalDateTime.now()).build();
@@ -110,7 +111,7 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}", storeId)))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}", orderId, storeId)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.reviewId").value(reviewId.toString()))
                     .andExpect(jsonPath("$.data.userId").value(CUSTOMER_ID.intValue()))
@@ -125,6 +126,7 @@ class ReviewControllerTest {
         void createReview_boundary_rating_min_1() throws Exception {
             UUID storeId  = UUID.randomUUID();
             UUID reviewId = UUID.randomUUID();
+            UUID orderId  = UUID.randomUUID();
             ReviewCreateResponse response = ReviewCreateResponse.builder()
                     .reviewId(reviewId).userId(CUSTOMER_ID).storeId(storeId)
                     .rating(1).content("bad").createdAt(LocalDateTime.now()).build();
@@ -135,7 +137,7 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":1,\"content\":\"bad\"}", storeId)))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":1,\"content\":\"bad\"}", orderId, storeId)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.rating").value(1));
         }
@@ -145,6 +147,7 @@ class ReviewControllerTest {
         void createReview_boundary_rating_max_5() throws Exception {
             UUID storeId  = UUID.randomUUID();
             UUID reviewId = UUID.randomUUID();
+            UUID orderId  = UUID.randomUUID();
             ReviewCreateResponse response = ReviewCreateResponse.builder()
                     .reviewId(reviewId).userId(CUSTOMER_ID).storeId(storeId)
                     .rating(5).content("great").createdAt(LocalDateTime.now()).build();
@@ -155,7 +158,7 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":5,\"content\":\"great\"}", storeId)))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":5,\"content\":\"great\"}", orderId, storeId)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.rating").value(5));
         }
@@ -232,8 +235,8 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
-                                    UUID.randomUUID())))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
                     .andExpect(status().isNotFound());
             verify(reviewService, times(1)).createReview(eq(CUSTOMER_ID), any());
         }
@@ -248,8 +251,8 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
-                                    UUID.randomUUID())))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
                     .andExpect(status().isNotFound());
             verify(reviewService, times(1)).createReview(eq(CUSTOMER_ID), any());
         }
@@ -264,9 +267,41 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
-                                    UUID.randomUUID())))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
                     .andExpect(status().isConflict());
+            verify(reviewService, times(1)).createReview(eq(CUSTOMER_ID), any());
+        }
+
+        @Test
+        @DisplayName("실패 전파 — ORDER_NOT_FOUND → 404")
+        void createReview_fail_order_not_found_propagates_404() throws Exception {
+            when(reviewService.createReview(eq(CUSTOMER_ID), any()))
+                    .thenThrow(new CustomException(ErrorCode.ORDER_NOT_FOUND));
+
+            mockMvc.perform(post("/v1/reviews")
+                            .with(withCustomerAuth)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(String.format(
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
+                    .andExpect(status().isNotFound());
+            verify(reviewService, times(1)).createReview(eq(CUSTOMER_ID), any());
+        }
+
+        @Test
+        @DisplayName("실패 전파 — ORDER_NOT_COMPLETED → 400")
+        void createReview_fail_order_not_completed_propagates_400() throws Exception {
+            when(reviewService.createReview(eq(CUSTOMER_ID), any()))
+                    .thenThrow(new CustomException(ErrorCode.ORDER_NOT_COMPLETED));
+
+            mockMvc.perform(post("/v1/reviews")
+                            .with(withCustomerAuth)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(String.format(
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
+                    .andExpect(status().isBadRequest());
             verify(reviewService, times(1)).createReview(eq(CUSTOMER_ID), any());
         }
 
@@ -280,8 +315,8 @@ class ReviewControllerTest {
                             .with(withCustomerAuth)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(String.format(
-                                    "{\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
-                                    UUID.randomUUID())))
+                                    "{\"orderId\":\"%s\",\"storeId\":\"%s\",\"rating\":4,\"content\":\"good\"}",
+                                    UUID.randomUUID(), UUID.randomUUID())))
                     .andExpect(status().isInternalServerError());
         }
     }

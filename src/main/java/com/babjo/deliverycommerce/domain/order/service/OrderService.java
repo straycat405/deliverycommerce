@@ -35,7 +35,7 @@ public class OrderService {
 
                     Product product = productRepository.findById(itemDto.getProductId())
                                       .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
-                    if(product.getPrice().equals(itemDto.getOrderPrice())){
+                    if(!product.getPrice().equals(itemDto.getOrderPrice())){
                           throw new CustomException(ErrorCode.PRICE_MISMATCH);
                     }
                     return OrderItem.createOrderItem(

@@ -5,6 +5,7 @@ import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import com.babjo.deliverycommerce.global.common.audit.AuditorAwareImpl;
 import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.jpa.JpaAuditingConfig;
+import com.babjo.deliverycommerce.global.jpa.QueryDslConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 // createdAt(nullable=false)조건 필요해서 추가
-@Import({JpaAuditingConfig.class, AuditorAwareImpl.class})
+// PaymentRepositoryImpl 등 JPAQueryFactory를 사용하는 커스텀 Repository 구현체를 위해 QueryDslConfig 추가
+@Import({JpaAuditingConfig.class, AuditorAwareImpl.class, QueryDslConfig.class})
 public class UserRepositoryTest {
 
     @Autowired

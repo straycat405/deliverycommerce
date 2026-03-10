@@ -1,6 +1,11 @@
 package com.babjo.deliverycommerce.domain.product.service;
 
-import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
+import com.babjo.deliverycommerce.domain.ai.entity.AiRequestLog;
+import com.babjo.deliverycommerce.domain.ai.entity.AiRequestStatus;
+import com.babjo.deliverycommerce.domain.ai.repository.AiRequestLogRepository;
+import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.UserPrincipal;
@@ -8,14 +13,15 @@ import com.babjo.deliverycommerce.domain.product.dto.ProductCreateRequestDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductResponseDto;
 import com.babjo.deliverycommerce.domain.product.dto.ProductUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
+import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -24,16 +30,37 @@ import java.util.stream.Collectors;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
+    private final StoreRepository storeRepository;
     private final AiDescriptionService aiDescriptionService;
+
+    private static final String AI_MODEL = "gemini-3-flash-preview";
+    private final AiRequestLogRepository aiRequestLogRepository;
+
+
+    /* =========================================================
+       관리 API (OWNER/MANAGER/MASTER)
+       - storeId 필수
+       - OWNER는 본인 store 소유일 때만 가능
+       - MANAGER/MASTER는 소유 무관
+     ========================================================= */
 
     // 상품 생성
     @Override
     @Transactional
-    public ProductResponseDto create(ProductCreateRequestDto request) {
+    public ProductResponseDto create(UUID storeId, ProductCreateRequestDto request, UserPrincipal user) {
+
+        validateStoreAccess(storeId, user);
+
+        Store store = storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
 
         String description = request.getDescription();
+        if(description == null) {
+            description = "";
+        }
 
         Product product = Product.builder()
+                .store(store)
                 .name(request.getName())
                 .price(request.getPrice())
                 .productCategory(request.getProductCategory())
@@ -41,71 +68,26 @@ public class ProductServiceImpl implements ProductService {
                 .useAiDescription(request.getUseAiDescription())
                 .build();
 
+        product.initCreatedBy(user.getUserId());
+
         productRepository.save(product);
 
         return ProductResponseDto.from(product);
     }
 
-    // 단건 조회
-    @Override
-    public ProductResponseDto get(UUID productId, UserPrincipal user) {
-
-        Product product = getActiveProduct(productId);
-
-        // CUSTOMER는 숨김 상품 조회 불가
-        if(user.getRole().equals("CUSTOMER") && product.isProductHide()) {
-            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-
-        return ProductResponseDto.from(product);
-    }
-
-    // 전체 조회
-    @Override
-    public List<ProductResponseDto> getAll(UserPrincipal user) {
-
-        String role = user.getRole();
-
-        List<Product> products;
-
-        // CUSTOMER는 숨김 제외
-        if (role.equals("CUSTOMER")) {
-            products = productRepository.findAllByProductHideFalseAndDeletedAtIsNull();
-        } else {    // OWNER 이상은 숨김 포함
-            products = productRepository.findAllByDeletedAtIsNull();
-        }
-
-        return products.stream()
-                .map(ProductResponseDto::from)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<ProductResponseDto> getByCategory(String category, UserPrincipal user) {
-
-        String role = user.getRole();
-
-        List<Product> products;
-
-        if (role.equals("CUSTOMER")) {
-            products = productRepository.findAllByProductCategoryAndDeletedAtIsNullAndProductHideFalse(category);
-        } else {
-            products = productRepository.findAllByProductCategoryAndDeletedAtIsNull(category);
-        }
-
-        return products.stream()
-                .map(ProductResponseDto::from)
-                .toList();
-    }
-
-    // 수정 >> Store과 연결 후 본인 store만 수정할 수 있게 변경
+    // 수정
     @Override
     @Transactional
-    public ProductResponseDto update(UUID productId, ProductUpdateRequestDto request) {
+    public ProductResponseDto update(UUID storeId, UUID productId, ProductUpdateRequestDto request, UserPrincipal user) {
 
-        Product product = getActiveProduct(productId);
+        validateStoreAccess(storeId, user);
+
+        Product product = getActiveProduct(storeId, productId);
 
         String description = request.getDescription();
+        if(description == null) {
+            description = "";
+        }
 
         product.update(
                 request.getName(),
@@ -120,51 +102,218 @@ public class ProductServiceImpl implements ProductService {
     // 삭제
     @Override
     @Transactional
-    public void delete(UUID productId, Long userId) {
+    public void delete(UUID storeId, UUID productId, UserPrincipal user) {
 
-        Product product = getActiveProduct(productId);
+        validateStoreAccess(storeId, user);
 
-        product.delete(userId);
+        Product product = getActiveProduct(storeId, productId);
+        product.delete(user.getUserId());
     }
 
     @Override
     @Transactional
-    public ProductResponseDto generateDescription(UUID productId, String point) {
+    public void hide(UUID storeId, UUID productId, UserPrincipal user) {
 
-        Product product = getActiveProduct(productId);
+        validateStoreAccess(storeId, user);
 
-        String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
-
-        product.updateDescription(aiDescription);
-
-        return ProductResponseDto.from(product);
-    }
-
-    @Override
-    @Transactional
-    public void hide(UUID productId) {
-        Product product = getActiveProduct(productId);
-
+        Product product = getActiveProduct(storeId, productId);
         product.hide();
     }
 
     @Override
     @Transactional
-    public void show(UUID productId) {
-        Product product = getActiveProduct(productId);
+    public void show(UUID storeId, UUID productId, UserPrincipal user) {
 
+        validateStoreAccess(storeId, user);
+
+        Product product = getActiveProduct(storeId, productId);
         product.show();
     }
 
-    private Product getActiveProduct(UUID productId) {
+    @Override
+    @Transactional
+    public ProductResponseDto generateDescription(UUID storeId, UUID productId, String point, UserPrincipal user) {
 
-        Product product = productRepository.findByProductIdAndDeletedAtIsNull(productId)
+        validateStoreAccess(storeId, user);
+
+        Product product = getActiveProduct(storeId, productId);
+
+        String prompt = """
+                당신은 배달앱 음식 메뉴 소개를 작성하는 마케터입니다.
+                
+                [메뉴 이름]
+                %s
+                
+                [메뉴 특징]
+                %s
+                
+                위 정보를 기반으로 배달앱에 등록할 음식 설명을 작성하세요.
+                
+                조건:
+                - 답변을 최대한 간결하게 50자 이하로
+                - 먹고 싶어지게 작성
+                - 과장 광고 금지
+                - 이모지 사용 금지
+                """.formatted(product.getName(), point);
+
+        try {
+            String aiDescription = aiDescriptionService.generateProductDescription(product.getName(), point);
+            product.updateDescription(aiDescription);
+
+            aiRequestLogRepository.save(AiRequestLog.builder()
+                    .productId(productId)
+                    .userId(user.getUserId())
+                    .model(AI_MODEL)
+                    .prompt(prompt)
+                    .response(aiDescription)
+                    .status(AiRequestStatus.SUCCESS)
+                    .build());
+
+            return ProductResponseDto.from(product);
+        } catch (Exception e) {
+            aiRequestLogRepository.save(AiRequestLog.builder()
+                    .productId(productId)
+                    .userId(user.getUserId())
+                    .model(AI_MODEL)
+                    .prompt(prompt)
+                    .status(AiRequestStatus.FAIL)
+                    .errorMessage(e.getMessage())
+                    .build());
+
+            throw new CustomException(ErrorCode.AI_GENERATION_FAILED);
+        }
+
+    }
+
+    /* =========================================================
+       조회 API (permitAll)
+       - storeId 필수 (store 범위로 조회)
+       - 숨김 상품은:
+           - 본인 store의 OWNER / MANAGER / MASTER 만 조회 가능
+           - CUSTOMER 또는 타 store OWNER는 조회 불가(404 처리)
+     ========================================================= */
+
+    // 단건 조회
+    @Override
+    @Transactional
+    public ProductResponseDto get(UUID storeId, UUID productId, UserPrincipal user) {
+
+        Product product = productRepository.findByProductIdAndStore_StoreId(storeId, productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if(product.getDeletedAt() != null) {
+        // 삭제 상품 조회 차단
+        if (product.isDeleted()) {
             throw new CustomException(ErrorCode.PRODUCT_DELETED);
         }
 
-        return product;
+        // 숨김 상품 접근 제어
+        if(product.isProductHide() && !canViewHiddenProduct(storeId, user)) {
+            // 숨김 상품은 존재 자체를 숨기기 위해 404로 처리
+            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        return ProductResponseDto.from(product);
+    }
+
+    // 전체 조회
+    @Override
+    @Transactional
+    public Page<ProductResponseDto> getAll(UUID storeId, String categoryOrNull, UserPrincipal user, Pageable pageable) {
+
+        Boolean canViewHidden = canViewHiddenProduct(storeId, user);
+
+        Page<Product> products;
+
+        if (categoryOrNull != null && !categoryOrNull.isBlank()) {
+            // 카테고리로 조회
+
+            if (canViewHidden) {
+                products = productRepository
+                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNull(storeId, categoryOrNull, pageable);
+            } else {
+                products = productRepository
+                        .findAllByStore_StoreIdAndProductCategoryAndDeletedAtIsNullAndProductHideFalse(storeId, categoryOrNull, pageable);
+            }
+
+        } else {
+            // 전체 조회
+            if (canViewHidden) {
+                products = productRepository
+                        .findAllByStore_StoreIdAndDeletedAtIsNull(storeId, pageable);
+            } else {
+                products = productRepository
+                        .findAllByStore_StoreIdAndProductHideFalseAndDeletedAtIsNull(storeId, pageable);
+            }
+        }
+
+        return products.map(ProductResponseDto::from);
+    }
+
+    /* =========================
+       공통 유틸/검증 메서드
+     ========================= */
+
+    private Product getActiveProduct(UUID storeId, UUID productId) {
+
+        return productRepository.findByProductIdAndStore_StoreIdAndDeletedAtIsNull(productId, storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    private Store getActiveStore(UUID storeId) {
+        return storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+    }
+
+    // 관리 API 권한 검증
+    // MASTER, MANAGER: OK
+    // OWNER: store 소유자(createBy)와 로그인 userId 일치해야 OK
+    private void validateStoreAccess(UUID storeId, UserPrincipal user) {
+
+        if(user == null) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String role= user.getRole();
+
+        if(role.equals(UserEnumRole.Authority.MANAGER) || role.equals(UserEnumRole.Authority.MASTER)) {
+            return;
+        }
+
+        if (role.equals(UserEnumRole.Authority.OWNER)) {
+            Store store = getActiveStore(storeId);
+            Long ownerUserId = store.getCreatedBy();
+
+            if (ownerUserId == null || !ownerUserId.equals(user.getUserId())) {
+                throw new CustomException(ErrorCode.FORBIDDEN);
+            }
+            return;
+        }
+
+        throw new CustomException(ErrorCode.FORBIDDEN);
+    }
+
+    // 숨김 상품 조회 가능 여부
+    // MASTER, MANAGER: OK
+    // OWNER: store 소유자(createBy)와 로그인 userId 일치해야 OK
+    // CUSTOMER/비로그인: 불가
+    private Boolean canViewHiddenProduct(UUID storeId, UserPrincipal user) {
+
+        if (user == null) {
+            return false;
+        }
+
+        String role = user.getRole();
+
+        if(role.equals(UserEnumRole.Authority.MANAGER) || role.equals(UserEnumRole.Authority.MASTER)) {
+            return true;
+        }
+
+        if(role.equals(UserEnumRole.Authority.OWNER)) {
+            Store store = getActiveStore(storeId);
+            Long ownerId = store.getCreatedBy();
+            return ownerId != null && ownerId.equals(user.getUserId());
+        }
+
+        return false;
     }
 }

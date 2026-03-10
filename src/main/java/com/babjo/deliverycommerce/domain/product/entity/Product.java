@@ -1,10 +1,10 @@
 package com.babjo.deliverycommerce.domain.product.entity;
 
+import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -20,8 +20,9 @@ public class Product extends BaseEntity {
     @Column(name = "product_id")
     private UUID productId;
 
-    // Store 구현 이후 연결
-    // private Store store;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "store_id", nullable = false)
+     private Store store;
 
     @Column(name = "product_category", nullable = false, length = 10)
     private String productCategory;

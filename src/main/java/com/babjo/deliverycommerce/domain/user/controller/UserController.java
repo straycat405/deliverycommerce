@@ -1,13 +1,12 @@
 package com.babjo.deliverycommerce.domain.user.controller;
 
 import com.babjo.deliverycommerce.domain.user.dto.*;
+import com.babjo.deliverycommerce.domain.user.service.UserService;
 import com.babjo.deliverycommerce.global.common.dto.CommonResponse;
 import com.babjo.deliverycommerce.global.jwt.JwtUtil;
 import com.babjo.deliverycommerce.global.redis.RedisKeys;
 import com.babjo.deliverycommerce.global.redis.RedisUtil;
-import com.babjo.deliverycommerce.global.security.UserPrincipal;
-import com.babjo.deliverycommerce.domain.user.dto.*;
-import com.babjo.deliverycommerce.domain.user.service.UserService;
+import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -22,7 +21,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.TimeUnit;
@@ -37,6 +36,12 @@ public class UserController {
     private final UserService userService;
     private final JwtUtil jwtUtil;
     private final RedisUtil redisUtil;
+    /**
+     * - 기존 @AuthenticationPrincipal UserPrincipal principal ->
+     * Authentication authentication 교체
+     * - 기존 principal.getUserId() -> currentResolver.getUserId(authentication) 교체
+     */
+    private final CurrentUserResolver currentUserResolver;
 
     /**
      * POST /v1/users/signup
@@ -124,14 +129,14 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<CommonResponse<Void>> logout(
             @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader,
-            @AuthenticationPrincipal UserPrincipal principal,
+            Authentication auth,
             HttpServletResponse response
     ) {
         // "Bearer {token}에서 토큰만 추출
         String token = jwtUtil.subStringToken(authHeader);
         // 토큰의 userId값 추출
-        long userId = principal.getUserId();
-        log.info("[Logout] userId={}, username={}", userId, principal.getUsername());
+        long userId = currentUserResolver.getUserId(auth);
+        log.info("[Logout] userId={}", userId);
         // Access Token 남은 만료시간 계산
         long duration = jwtUtil.getRemainExpiration(token);
         // Redis에 AccessToken 블랙리스트 등록
@@ -275,10 +280,10 @@ public class UserController {
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/me")
     public ResponseEntity<CommonResponse<UserUpdateResponseDto>> updateUser(@Valid @RequestBody UserUpdateRequestDto requestDto,
-                                                                            @AuthenticationPrincipal UserPrincipal principal) {
+                                                                            Authentication auth) {
 
         // 토큰에서 userId 추출 (비교용)
-        long userId = principal.getUserId();
+        long userId = currentUserResolver.getUserId(auth);
 
         UserUpdateResponseDto responseDto = userService.updateUser(requestDto, userId);
         return CommonResponse.ok("사용자 정보 수정 성공", responseDto);
@@ -334,18 +339,18 @@ public class UserController {
     })
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/me")
-    public ResponseEntity<CommonResponse<UserDeleteResponseDto>> deleteUser(@AuthenticationPrincipal UserPrincipal principal,
+    public ResponseEntity<CommonResponse<UserDeleteResponseDto>> deleteUser(Authentication auth,
                                                                             @RequestHeader(JwtUtil.AUTHORIZATION_HEADER) String authHeader,
                                                                             @Valid @RequestBody UserDeleteRequestDto requestDto,
                                                                             HttpServletResponse response) {
 
-        Long userId = principal.getUserId();
+        Long userId = currentUserResolver.getUserId(auth);
 
         UserDeleteResponseDto responseDto = userService.deleteUser(userId, requestDto.getPassword());
 
         // "Bearer {token}에서 토큰만 추출
         String token = jwtUtil.subStringToken(authHeader);
-        log.info("[DeleteUserSelf] userId={}, username={}", userId, principal.getUsername());
+        log.info("[DeleteUserSelf] userId={}", userId);
         // Access Token 남은 만료시간 계산
         long duration = jwtUtil.getRemainExpiration(token);
         // Redis에 AccessToken 블랙리스트 등록
@@ -388,9 +393,9 @@ public class UserController {
     })
     @PreAuthorize("hasAnyRole('MANAGER', 'MASTER')")
     @DeleteMapping("/{userId}")
-    public ResponseEntity<CommonResponse<UserDeleteResponseDto>> adminDeleteUser(@AuthenticationPrincipal UserPrincipal principal,
+    public ResponseEntity<CommonResponse<UserDeleteResponseDto>> adminDeleteUser(Authentication auth,
                                                                                  @PathVariable long userId) {
-        long adminUserId = principal.getUserId();
+        long adminUserId = currentUserResolver.getUserId(auth);
 
         UserDeleteResponseDto responseDto = userService.adminDeleteUser(userId, adminUserId);
         return CommonResponse.ok("회원 탈퇴 처리 성공", responseDto);
@@ -420,10 +425,10 @@ public class UserController {
     })
     @PreAuthorize("hasRole('MASTER')")
     @PatchMapping("/{userId}/role")
-    public ResponseEntity<CommonResponse<AdminUserUpdateRoleResponseDto>> adminUpdateRoleUser(@AuthenticationPrincipal UserPrincipal principal,
+    public ResponseEntity<CommonResponse<AdminUserUpdateRoleResponseDto>> adminUpdateRoleUser(Authentication auth,
                                                                                               @PathVariable long userId,
                                                                                               @Valid @RequestBody AdminUserUpdateRoleRequestDto requestDto) {
-        long adminUserId = principal.getUserId();
+        long adminUserId = currentUserResolver.getUserId(auth);
 
         AdminUserUpdateRoleResponseDto responseDto = userService.adminUpdateRoleUser(userId, adminUserId, requestDto.getRole());
         return CommonResponse.ok("사용자 권한 변경 성공", responseDto);
@@ -452,8 +457,8 @@ public class UserController {
     @PreAuthorize("hasRole('MASTER')")
     @PostMapping("/admin")
     public ResponseEntity<CommonResponse<AdminSignupResponseDto>> adminSignup(@Valid @RequestBody AdminSignupRequestDto requestDto,
-                                                                              @AuthenticationPrincipal UserPrincipal principal) {
-        long adminUserId = principal.getUserId();
+                                                                              Authentication auth) {
+        long adminUserId = currentUserResolver.getUserId(auth);
 
         AdminSignupResponseDto response = userService.adminSignup(requestDto, adminUserId);
         return CommonResponse.created("사용자 생성 성공", response);

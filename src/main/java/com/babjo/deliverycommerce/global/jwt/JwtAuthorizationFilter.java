@@ -129,14 +129,20 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private void setAuthentication(Long userId, UserAuthCache cache) {
+        // UserDetails의 getAuthorities와 동일하지만, 토큰 생성 시점에 캐시에 있는 role을 바로 넘겨줌
         List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(cache.getRole())  // 이미 "ROLE_OWNER" 형식
+                new SimpleGrantedAuthority(cache.getRole()) //"ROLE_OWNER" 형식의 문자열을 권한 객체로 변환
         );
+        // 사용자 정보 객체 생성
         UserPrincipal principal = new UserPrincipal(userId, cache.getUsername(), cache.getRole());
+
+        // Spring Security 인증 객체 생성
+        // 2번째 파라미터인 credential (비밀번호)은 JWT방식이라 불필요하므로 null
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(auth);
+        // 컨텍스트에 auth객체 저장 - 이를 통해 @PreAuthorize, @AuthentiacationPrincipal 사용 가능
         SecurityContextHolder.setContext(context);
     }
 

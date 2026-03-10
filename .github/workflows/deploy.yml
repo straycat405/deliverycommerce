@@ -145,6 +145,7 @@ jobs:
             REDIS_PORT=${{ secrets.REDIS_PORT }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+            GOOGLE_PROJECT_ID=${{ secrets.GOOGLE_PROJECT_ID }}
             EOF
 
             # 앱 컨테이너만 재시작 (DB/Redis 컨테이너는 유지)

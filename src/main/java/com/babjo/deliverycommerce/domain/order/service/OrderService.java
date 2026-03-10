@@ -8,6 +8,8 @@ import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
+import com.babjo.deliverycommerce.domain.store.entity.Store;
+import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,8 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final StoreRepository storeRepository;
+
     // 주문 생성
     @Transactional
     public OrderResponseDto.OrderDetail createOrder(Long userId, OrderRequestDto.CreateOrder request){
@@ -108,6 +112,7 @@ public class OrderService {
     @Transactional
     public OrderResponseDto.OrderAction acceptOrder(UUID orderId, Long ownerId, OrderRequestDto.AcceptOrder request){
         Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(),ownerId);
         order.accept(ownerId, request.getCookingMinutes());
 
         return OrderResponseDto.OrderAction.from(order, order.getAcceptedAt());
@@ -117,19 +122,29 @@ public class OrderService {
     @Transactional
     public OrderResponseDto.OrderAction updateOrderStatus(UUID orderId,Long ownerId, OrderStatus status){
         Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(),ownerId);
         switch (status){
             case PREPARING -> order.startPreparing(ownerId);
             case PICKUP_READY -> order.readyPickup(ownerId);
             case PICKED_UP -> order.completePickup(ownerId);
             default -> throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
         }
-        return OrderResponseDto.OrderAction.from(order, LocalDateTime.now());
+        return OrderResponseDto.OrderAction.from(order, order.getUpdatedAt());
     }
 
-    // orderId 조회 로직 공통화
+    // orderId 조회 로직 공통 메소드
     private Order findActiveOrder(UUID orderId){
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND));
+    }
+
+    // 가게 소유권 검증 로직 공통 메소드
+    private void validateStoreOwner(UUID storeId, Long ownerId){
+        Store store = storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)
+                .orElseThrow(() -> new CustomException(ErrorCode.STORE_NOT_FOUND));
+        if(!store.getOwnerId().equals(ownerId)){
+            throw new CustomException(ErrorCode.STORE_FORBIDDEN);
+        }
     }
 
 

@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 @Getter
 @NoArgsConstructor
 public class ReviewCreateRequest {
-    // [TODO] Order 도메인 연결 후 @NotNull 어노테이션 추가 필요
+    @NotNull
     private UUID orderId;
 
     @NotNull

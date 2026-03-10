@@ -6,11 +6,8 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
@@ -23,11 +20,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 // API 기본정보
                 .info(apiInfo())
-                // 서버 URL 설정
-                .servers(List.of(
-                        new Server().url("http://localhost:8080").description("로컬 개발 서버")
-                        //new Server().url("https://api.example.com").description("운영 서버")
-                ))
+                // 서버 URL을 지정하지 않으면 springdoc이 현재 접속 서버 URL을 자동 사용
                 // 전역 Security 설정 (API 자물쇠 아이콘 표시)
                 .addSecurityItem(new SecurityRequirement().addList(securityScheme))
                 // Security 스키마 정의

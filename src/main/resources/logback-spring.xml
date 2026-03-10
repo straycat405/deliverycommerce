@@ -21,9 +21,9 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <!-- 날짜별로 파일 분리: app.2026-02-27.log -->
+            <!-- 날짜별 로그 파일 -->
             <fileNamePattern>logs/app.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <!-- 30일치만 보관 -->
+            <!-- 30일 보관 -->
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -32,39 +32,43 @@
         </encoder>
     </appender>
 
-    <!-- 개발 프로파일일 때만 적용 -->
-    <springProfile name="dev, default">
+    <!-- 기본 Root Logger (프로파일 관계없이 항상 적용) -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- 개발 환경 -->
+    <springProfile name="dev,default">
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </root>
 
-        <!-- 프로젝트 패키지 → DEBUG -->
+        <!-- 프로젝트 패키지 DEBUG -->
         <logger name="com.babjo.deliverycommerce" level="DEBUG" additivity="false">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
         </logger>
 
-        <!-- p6spy로 대체 -->
-<!--        &lt;!&ndash; Hibernate SQL &ndash;&gt;-->
-<!--        <logger name="org.hibernate.sql" level="DEBUG" additivity="false">-->
-<!--            <appender-ref ref="CONSOLE"/>-->
-<!--            <appender-ref ref="FILE"/>-->
-<!--        </logger>-->
-
-<!--        &lt;!&ndash; Hibernate 바인딩 파라미터 &ndash;&gt;-->
-<!--        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE" additivity="false">-->
-<!--            <appender-ref ref="CONSOLE"/>-->
-<!--            <appender-ref ref="FILE"/>-->
-<!--        </logger>-->
+        <!-- Hibernate SQL 로그 (필요 시 사용) -->
+        <!--
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.orm.jdbc.bind" level="TRACE"/>
+        -->
 
     </springProfile>
 
-    <!-- 운영 프로파일 -->
+    <!-- 운영 환경 -->
     <springProfile name="prod">
+
         <root level="WARN">
             <appender-ref ref="FILE"/>
         </root>
+
+        <logger name="com.babjo.deliverycommerce" level="INFO"/>
+
     </springProfile>
 
 </configuration>

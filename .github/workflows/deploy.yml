@@ -149,6 +149,6 @@ jobs:
             EOF
 
             # 앱 컨테이너만 재시작 (DB/Redis 컨테이너는 유지)
-            docker-compose up -d --no-deps app
+            docker compose up -d --no-deps app
 
             echo "배포 완료: ${{ github.sha }}"

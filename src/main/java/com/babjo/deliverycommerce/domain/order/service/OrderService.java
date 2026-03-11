@@ -6,6 +6,7 @@ import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
+import com.babjo.deliverycommerce.domain.payment.service.PaymentService;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
@@ -115,6 +116,15 @@ public class OrderService {
         Order order = findActiveOrder(orderId);
         validateStoreOwner(order.getStoreId(), ownerId);
         order.reject(ownerId, rejectReason);
+        return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
+    }
+
+    // 주문 중도 취소
+    @Transactional
+    public OrderResponseDto.OrderAction cancelOrderByOwner(UUID orderId, Long ownerId, String reason){
+        Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(), ownerId);
+        order.cancelByOwner(ownerId, reason);
         return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
     }
 

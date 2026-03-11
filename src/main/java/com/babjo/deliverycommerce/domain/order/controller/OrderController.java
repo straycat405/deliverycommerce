@@ -124,8 +124,21 @@ public class OrderController {
 
     //주문 중도 취소, 조리 완료 되거나 완료된 주문은 취소 불가
     //PATCH v1/owner/{orderId}/owner-cancel
-
-
+    @PatchMapping("/owner/{orderId}/owner-cancel")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> cancelOrderByOwner(
+            @PathVariable UUID orderId,
+            Authentication authentication,
+            @RequestBody @Valid OrderRequestDto.cancelOrder request
+    ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
+        OrderResponseDto.OrderAction data = orderService.cancelOrderByOwner(
+                orderId,
+                ownerId,
+                request.getCancelReason()
+        );
+        return CommonResponse.ok("주문이 중도 취소 되었습니다.", data);
+    }
 
     // 조리 시작 - PATCH /v1/owner/orders/{orderId}/preparing
     @PatchMapping("/owner/orders/{orderId}/preparing")

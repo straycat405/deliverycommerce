@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/v1/products/{productId}/ai-logs")
+@RequestMapping("/v1/ai-logs")
 @Tag(name = "ai-request-log-controller", description = "AI 요청 로그 조회 API")
 public class AiRequestLogController {
 
@@ -36,7 +36,7 @@ public class AiRequestLogController {
             @ApiResponse(responseCode = "403", description = "접근 권한 없음")
     })
     @PreAuthorize("hasAnyRole('MANAGER','MASTER')")
-    @GetMapping
+    @GetMapping("/{productId}")
     public Page<AiRequestLogResponseDto> getLogs(
             @PathVariable UUID productId,
             Pageable pageable

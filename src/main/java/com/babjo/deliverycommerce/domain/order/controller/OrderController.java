@@ -70,10 +70,10 @@ public class OrderController {
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> cancelOrder(
             Authentication authentication,
             @PathVariable UUID orderId,
-            @RequestParam String reason
+            @RequestBody @Valid OrderRequestDto.cancelOrder request
     ){
         Long userId = currentUserResolver.getUserId(authentication);
-        OrderResponseDto.OrderAction data = orderService.cancelOrder(orderId,userId, reason);
+        OrderResponseDto.OrderAction data = orderService.cancelOrder(orderId,userId, request.getCancelReason());
         return CommonResponse.ok("주문이 취소 되었습니다.",data);
     }
 
@@ -89,20 +89,58 @@ public class OrderController {
         return CommonResponse.ok("주문 내역이 삭제되었습니다.", data);
     }
 
-    // 주문 접수 - PATCH /v1/owner/orders/
+    // 주문 접수 - PATCH /v1/owner/orders/{orderId}/accept
     @PatchMapping("/owner/orders/{orderId}/accept")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> acceptOrder(
             @PathVariable UUID orderId,
-            @RequestBody OrderRequestDto.AcceptOrder request,
+            @RequestBody @Valid OrderRequestDto.AcceptOrder request,
             Authentication authentication
     ){
         Long ownerId = currentUserResolver.getUserId(authentication);
-        OrderResponseDto.OrderAction data = orderService.acceptOrder(orderId, ownerId, request);
+        OrderResponseDto.OrderAction data = orderService.acceptOrder(
+                orderId,
+                ownerId,
+                request.getCookingMinutes());
         return CommonResponse.ok("주문을 접수하였습니다.",data);
     }
 
-    // 조리 시작 - PATCH v1/owner/orders/{orderId}/preparing
+    //주문 거절 - PATCH /v1/owner/{orderId}/reject
+    @PatchMapping("/owner/{orderId}/reject")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>>rejectOrder(
+            @PathVariable UUID orderId,
+            Authentication authentication,
+            @RequestBody @Valid OrderRequestDto.RejectOrder request
+    ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
+        OrderResponseDto.OrderAction data = orderService.rejectOrder(
+                orderId,
+                ownerId,
+                request.getRejectReason()
+        );
+        return CommonResponse.ok("주문을 거절하였습니다.", data);
+    }
+
+    //주문 중도 취소, 조리 완료 되거나 완료된 주문은 취소 불가
+    //PATCH v1/owner/{orderId}/owner-cancel
+    @PatchMapping("/owner/{orderId}/owner-cancel")
+    @PreAuthorize("hasRole('OWNER')")
+    public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> cancelOrderByOwner(
+            @PathVariable UUID orderId,
+            Authentication authentication,
+            @RequestBody @Valid OrderRequestDto.cancelOrder request
+    ){
+        Long ownerId = currentUserResolver.getUserId(authentication);
+        OrderResponseDto.OrderAction data = orderService.cancelOrderByOwner(
+                orderId,
+                ownerId,
+                request.getCancelReason()
+        );
+        return CommonResponse.ok("주문이 중도 취소 되었습니다.", data);
+    }
+
+    // 조리 시작 - PATCH /v1/owner/orders/{orderId}/preparing
     @PatchMapping("/owner/orders/{orderId}/preparing")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> startPreparing(
@@ -114,7 +152,7 @@ public class OrderController {
         return CommonResponse.ok("조리를 시작합니다", data);
     }
 
-    // 조리 완료 및 픽업 대기 - PATCH v1/owner/orders/{orderId}/pickup-ready
+    // 조리 완료 및 픽업 대기 - PATCH /v1/owner/orders/{orderId}/pickup-ready
     @PatchMapping("/owner/orders/{orderId}/pickup-ready")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> readyPickup(
@@ -126,7 +164,7 @@ public class OrderController {
         return CommonResponse.ok("조리가 완료되어 픽업 대기 상태로 변경 되었습니다.",data);
     }
 
-    // 픽업 완료 - PATCH v1/owner/orders/{orderId}/pickup
+    // 픽업 완료 - PATCH /v1/owner/orders/{orderId}/pickup
     @PatchMapping("/owner/orders/{orderId}/pickup")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> completePickup(

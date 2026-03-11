@@ -70,10 +70,10 @@ public class OrderController {
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> cancelOrder(
             Authentication authentication,
             @PathVariable UUID orderId,
-            @RequestParam String reason
+            @RequestBody @Valid OrderRequestDto.cancelOrder request
     ){
         Long userId = currentUserResolver.getUserId(authentication);
-        OrderResponseDto.OrderAction data = orderService.cancelOrder(orderId,userId, reason);
+        OrderResponseDto.OrderAction data = orderService.cancelOrder(orderId,userId, request.getCancelReason());
         return CommonResponse.ok("주문이 취소 되었습니다.",data);
     }
 
@@ -89,16 +89,19 @@ public class OrderController {
         return CommonResponse.ok("주문 내역이 삭제되었습니다.", data);
     }
 
-    // 주문 접수 - PATCH /v1/owner/orders/
+    // 주문 접수 - PATCH /v1/owner/orders/{orderId}/accept
     @PatchMapping("/owner/orders/{orderId}/accept")
     @PreAuthorize("hasRole('OWNER')")
     public ResponseEntity<CommonResponse<OrderResponseDto.OrderAction>> acceptOrder(
             @PathVariable UUID orderId,
-            @RequestBody OrderRequestDto.AcceptOrder request,
+            @RequestBody @Valid OrderRequestDto.AcceptOrder request,
             Authentication authentication
     ){
         Long ownerId = currentUserResolver.getUserId(authentication);
-        OrderResponseDto.OrderAction data = orderService.acceptOrder(orderId, ownerId, request);
+        OrderResponseDto.OrderAction data = orderService.acceptOrder(
+                orderId,
+                ownerId,
+                request.getCookingMinutes());
         return CommonResponse.ok("주문을 접수하였습니다.",data);
     }
 

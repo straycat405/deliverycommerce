@@ -1,5 +1,6 @@
 package com.babjo.deliverycommerce.domain.review.entity;
 
+import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.user.entity.User;
 import com.babjo.deliverycommerce.global.common.entity.BaseEntity;
@@ -26,10 +27,9 @@ public class Review extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // [TODO] Order 도메인 연결 후 주석 해제
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "order_id", nullable = false, unique = true)
-//    private Order order;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false, unique = true)
+    private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id", nullable = false)
@@ -40,9 +40,10 @@ public class Review extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String content;
 
-    public static Review create(User user, Store store, Integer rating, String content) {
+    public static Review create(User user, Order order, Store store, Integer rating, String content) {
         Review review = new Review();
         review.user = user;
+        review.order = order;
         review.store = store;
         review.rating = rating;
         review.content = content;

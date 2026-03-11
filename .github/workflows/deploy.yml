@@ -69,6 +69,7 @@ jobs:
     needs: test # 테스트 실패시 배포 차단
     runs-on: ubuntu-latest
     timeout-minutes: 10 # SSH hang 등 무한 대기 방지
+    environment: production
     if: github.ref == 'refs/heads/main' && github.event_name == 'push' # main 브랜치인지 and 실제 PUSH 검사
 
     steps:

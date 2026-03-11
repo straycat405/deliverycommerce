@@ -92,7 +92,7 @@ public class ProductController {
             @ApiResponse(responseCode = "200", description = "상품 생성 성공"),
             @ApiResponse(responseCode = "403", description = "접근 권한 없음")
     })
-    @PostMapping("/create")
+    @PostMapping
     public ResponseEntity<ProductResponseDto> create(
             @PathVariable UUID storeId, @Valid @RequestBody ProductCreateRequestDto request,
             @AuthenticationPrincipal UserPrincipal user)

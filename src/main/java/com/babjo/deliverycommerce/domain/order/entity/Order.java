@@ -97,6 +97,9 @@ public class Order extends BaseEntity {
 
     // 주문 취소
     public void cancel(Long userId, String reason){
+        if (this.status != OrderStatus.CREATED){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
         this.canceledBy = userId;

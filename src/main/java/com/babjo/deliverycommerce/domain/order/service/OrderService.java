@@ -87,9 +87,6 @@ public class OrderService {
         if(!order.getUserId().equals(userId)){
             throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-        if(order.getStatus() != OrderStatus.CREATED){
-            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
-        }
         order.cancel(userId,reason);
         return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
     }

@@ -77,32 +77,7 @@
 
 ## 🏗️ 아키텍처
 
-```
-┌─────────────────────────────────────────────────────┐
-│                   GitHub Actions                    │
-│  push/PR → Build & Test                             │
-│  main push → bootJar → Docker 빌드 → Docker Hub push │
-└───────────────────────┬─────────────────────────────┘
-                        │ 
-                        │ 
-┌───────────────────────▼─────────────────────────────┐
-│               AWS EC2 (t2.micro)                    │
-│  ┌─────────────────────────────────────────────┐    │
-│  │  app (straycat405/deliverycommerce:latest)  │    │
-│  │  Spring Boot  :8080 → 외부 공개              │    │
-│  └─────────────────────────────────────────────┘    │
-│  ┌──────────────────────┐  ┌─────────────────────┐  │
-│  │  postgres:16         │  │  redis:7            │  │
-│  │  PostgreSQL  :5432   │  │  Redis       :6379  │  │
-│  │  (내부 통신 전용)     │  │  (내부 통신 전용)    │  │
-│  └──────────────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────┘
-
-         ┌──────────────────────┐
-         │     Docker Hub       │
-         │  :latest / :{sha}    │
-         └──────────────────────┘
-```
+![Image](https://github.com/user-attachments/assets/718684c9-483a-4366-a356-952d3d9e2b99)
 
 ### CI/CD Workflow
 ```
@@ -118,7 +93,7 @@ main merge                : Build & Test → bootJar → Docker 이미지 빌드
 
 ## 📊 ERD
 
-> TBD
+<img width="3590" height="1312" alt="Image" src="https://github.com/user-attachments/assets/bd6e9c75-ca4c-41b3-a201-e5874145fffc" />
 
 ---
 

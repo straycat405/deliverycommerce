@@ -242,6 +242,8 @@ http://localhost:8080/swagger-ui/index.html
 - 본인 주문 목록 조회 (페이징)
 - 주문 상세 조회
 - 주문 취소 (CUSTOMER - CREATED 상태에서만)
+- 주문 거절 (OWNER - CREATED 상태에서만)
+- 주문 중도 취소 (OWNER - ACCEPTED, PREPARING, PICKUP_READY 상태에서만)
 - 주문 상태 변경 (OWNER - 접수 → 조리중 → 픽업대기 → 픽업완료)
 - 주문 내역 Soft Delete
 

@@ -63,6 +63,7 @@ public enum ErrorCode {
     // ── Store ─────────────────────────────────────────
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "STORE_NOT_FOUND", "존재하지 않는 가게입니다."),
     STORE_FORBIDDEN(HttpStatus.FORBIDDEN, "STORE_FORBIDDEN", "해당 가게에 대한 권한이 없습니다."),
+    STORE_ADDRESS_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "STORE_ADDRESS_NOT_SUPPORTED", "현재 주문 가능 지역은 종로구만 지원합니다."),
 
 
     // ── Cart ─────────────────────────────────────────

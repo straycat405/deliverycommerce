@@ -132,6 +132,18 @@ public class Order extends BaseEntity {
         this.cookingMinutes = cookingMinutes;
     }
 
+    // 주문 거절
+    public void reject(Long ownerId, String rejectReason){
+        if(this.status != OrderStatus.CREATED){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
+        this.status = OrderStatus.REJECTED;
+        this.cancelReason = rejectReason;
+        this.canceledAt = LocalDateTime.now();
+        this.canceledBy = ownerId;
+
+    }
+
     // state : 조리 시작
     public void startPreparing(Long ownerId) {
         validateStatus(OrderStatus.ACCEPTED);

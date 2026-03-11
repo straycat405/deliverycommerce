@@ -98,21 +98,25 @@ public class OrderService {
         if(!order.getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-        if(order.isDeleted()){
-            throw new CustomException(ErrorCode.ORDER_ALREADY_DELETED);
-        }
         order.softDelete(userId);
         return OrderResponseDto.OrderAction.from(order, order.getDeletedAt());
     }
 
     // 주문 접수
     @Transactional
-    public OrderResponseDto.OrderAction acceptOrder(UUID orderId, Long ownerId, OrderRequestDto.AcceptOrder request){
+    public OrderResponseDto.OrderAction acceptOrder(UUID orderId, Long ownerId, Integer cookingMinutes){
         Order order = findActiveOrder(orderId);
         validateStoreOwner(order.getStoreId(),ownerId);
-        order.accept(ownerId, request.getCookingMinutes());
-
+        order.accept(ownerId, cookingMinutes);
         return OrderResponseDto.OrderAction.from(order, order.getAcceptedAt());
+    }
+
+    // 주문 거절
+    public OrderResponseDto.OrderAction rejectOrder(UUID orderId, Long ownerId, String rejectReason){
+        Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(), ownerId);
+        order.reject(ownerId, rejectReason);
+        return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
     }
 
     // 주문 상태 변경

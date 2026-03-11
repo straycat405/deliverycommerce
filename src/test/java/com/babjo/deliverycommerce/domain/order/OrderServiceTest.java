@@ -159,7 +159,7 @@ public class OrderServiceTest {
 
         OrderRequestDto.AcceptOrder request = new OrderRequestDto.AcceptOrder(30);
 
-        OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request);
+        OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request.getCookingMinutes());
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(order.getCookingMinutes()).isEqualTo(30);
@@ -186,9 +186,31 @@ public class OrderServiceTest {
         given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
                 .willReturn(Optional.of(mockStore));
 
-        assertThatThrownBy(() -> orderService.acceptOrder(orderId, fakeOwnerId, new OrderRequestDto.AcceptOrder(30)))
+        assertThatThrownBy(() -> orderService.acceptOrder(orderId, fakeOwnerId, 30))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("해당 가게에 대한 권한이 없습니다.");
+    }
+
+    @Test
+    @DisplayName("주문 거절 성공 - 사장님이 거절 사유와 함께 거절")
+    void rejectOrder_success() {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 100L;
+        String reason = "재료 소진으로 인한 주문 불가";
+
+        Order order = spy(Order.createOrder(1L, storeId, "인천", "없음", List.of()));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(mockStore));
+
+        orderService.rejectOrder(orderId, ownerId, reason);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED);
+        assertThat(order.getCancelReason()).isEqualTo(reason);
+        assertThat(order.getCanceledBy()).isEqualTo(ownerId);
     }
 
     @Test

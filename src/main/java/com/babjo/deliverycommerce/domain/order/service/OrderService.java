@@ -6,6 +6,7 @@ import com.babjo.deliverycommerce.domain.order.entity.Order;
 import com.babjo.deliverycommerce.domain.order.entity.OrderItem;
 import com.babjo.deliverycommerce.domain.order.entity.OrderStatus;
 import com.babjo.deliverycommerce.domain.order.repository.OrderRepository;
+import com.babjo.deliverycommerce.domain.payment.service.PaymentService;
 import com.babjo.deliverycommerce.domain.product.entity.Product;
 import com.babjo.deliverycommerce.domain.product.repository.ProductRepository;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
@@ -18,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -87,9 +87,6 @@ public class OrderService {
         if(!order.getUserId().equals(userId)){
             throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-        if(order.getStatus() != OrderStatus.CREATED){
-            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
-        }
         order.cancel(userId,reason);
         return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
     }
@@ -101,21 +98,34 @@ public class OrderService {
         if(!order.getUserId().equals(userId)) {
             throw new CustomException(ErrorCode.NOT_ORDER_USER);
         }
-        if(order.isDeleted()){
-            throw new CustomException(ErrorCode.ORDER_ALREADY_DELETED);
-        }
         order.softDelete(userId);
         return OrderResponseDto.OrderAction.from(order, order.getDeletedAt());
     }
 
     // 주문 접수
     @Transactional
-    public OrderResponseDto.OrderAction acceptOrder(UUID orderId, Long ownerId, OrderRequestDto.AcceptOrder request){
+    public OrderResponseDto.OrderAction acceptOrder(UUID orderId, Long ownerId, Integer cookingMinutes){
         Order order = findActiveOrder(orderId);
         validateStoreOwner(order.getStoreId(),ownerId);
-        order.accept(ownerId, request.getCookingMinutes());
-
+        order.accept(ownerId, cookingMinutes);
         return OrderResponseDto.OrderAction.from(order, order.getAcceptedAt());
+    }
+
+    // 주문 거절
+    public OrderResponseDto.OrderAction rejectOrder(UUID orderId, Long ownerId, String rejectReason){
+        Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(), ownerId);
+        order.reject(ownerId, rejectReason);
+        return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
+    }
+
+    // 주문 중도 취소
+    @Transactional
+    public OrderResponseDto.OrderAction cancelOrderByOwner(UUID orderId, Long ownerId, String reason){
+        Order order = findActiveOrder(orderId);
+        validateStoreOwner(order.getStoreId(), ownerId);
+        order.cancelByOwner(ownerId, reason);
+        return OrderResponseDto.OrderAction.from(order, order.getCanceledAt());
     }
 
     // 주문 상태 변경

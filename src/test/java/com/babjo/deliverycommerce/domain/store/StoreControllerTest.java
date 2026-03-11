@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.domain.store.dto.StoreListResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.service.StoreService;
+import com.babjo.deliverycommerce.global.exception.CustomException;
+import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import com.babjo.deliverycommerce.global.security.CurrentUserResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -294,5 +296,63 @@ public class StoreControllerTest {
                 .andExpect(status().isForbidden());
 
         verifyNoInteractions(currentUserResolver, storeService);
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER")
+    @DisplayName("가게생성 - 종로구가 아니면 400")
+    void 종로구_생성아니면_400() throws Exception {
+        //given
+        given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
+
+        given(storeService.create(eq(1L), any(StoreCreateRequestDto.class)))
+                .willThrow(new CustomException(ErrorCode.STORE_ADDRESS_NOT_SUPPORTED));
+
+
+        String requestBody = """
+                {
+                    "category": "한식",
+                    "name": "한식당",
+                    "address": "서울시 강남구"
+                }
+                """;
+
+        //when & then
+        mockMvc.perform(post("/v1/stores")
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("STORE_ADDRESS_NOT_SUPPORTED"));
+    }
+
+    @Test
+    @WithMockUser(roles = "OWNER")
+    @DisplayName("가게 수정 시 종로구가 아닌 주소로 변경하면 400")
+    void 다른주소_400() throws Exception {
+        //given
+        UUID storeId = UUID.randomUUID();
+
+        given(currentUserResolver.getUserId(any(Authentication.class))).willReturn(1L);
+
+        given(storeService.update(eq(storeId), eq(1L), any(StoreUpdateRequestDto.class))).willThrow(new CustomException(ErrorCode.STORE_ADDRESS_NOT_SUPPORTED));
+
+        String requestBody = """
+            {
+                "category": "치킨",
+                "name": "치킨집",
+                "address": "서울시 강남구"
+            }
+            """;
+
+        //when & then
+        mockMvc.perform(patch("/v1/stores/{storeId}", storeId)
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content(requestBody))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.code").value("STORE_ADDRESS_NOT_SUPPORTED"));
     }
 }

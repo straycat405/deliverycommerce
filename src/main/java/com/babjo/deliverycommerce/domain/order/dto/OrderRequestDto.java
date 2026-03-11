@@ -52,9 +52,27 @@ public class OrderRequestDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    public static class cancelOrder {
+        @NotBlank(message = "취소 사유를 입력해주세요.")
+        private String cancelReason;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class AcceptOrder {
         @Min(value = 1, message = "조리 시간은 최소 1분 이상 입력해야 합니다.")
         private Integer cookingMinutes;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class RejectOrder{
+        @NotBlank(message = "거절 사유를 입력해주세요.")
+        private String rejectReason;
     }
 
 }

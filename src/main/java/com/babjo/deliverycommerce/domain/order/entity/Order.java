@@ -97,10 +97,13 @@ public class Order extends BaseEntity {
 
     // 주문 취소
     public void cancel(Long userId, String reason){
+        if (this.status != OrderStatus.CREATED){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
         this.status = OrderStatus.CANCELED;
         this.canceledAt = LocalDateTime.now();
         this.canceledBy = userId;
-        this.cancelReason = reason;
+        this.cancelReason = "[ Customer 취소 ] " + reason;
     }
 
     // 주문 내역 삭제 ( 숨김 )
@@ -127,6 +130,31 @@ public class Order extends BaseEntity {
         this.acceptedAt = LocalDateTime.now();
         this.acceptedBy = ownerId;
         this.cookingMinutes = cookingMinutes;
+    }
+
+    // 주문 거절
+    public void reject(Long ownerId, String rejectReason){
+        if(this.status != OrderStatus.CREATED){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
+        this.status = OrderStatus.REJECTED;
+        this.cancelReason = rejectReason;
+        this.canceledAt = LocalDateTime.now();
+        this.canceledBy = ownerId;
+
+    }
+
+    // 주문 중도 취소
+    public void cancelByOwner(Long ownerId, String reason){
+        if(this.status != OrderStatus.ACCEPTED &&
+           this.status != OrderStatus.PREPARING &&
+           this.status != OrderStatus.PICKUP_READY){
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS);
+        }
+        this.status = OrderStatus.CANCELED;
+        this.cancelReason = "[ Onwer 취소 ] " + reason;
+        this.canceledAt = LocalDateTime.now();
+        this.canceledBy = ownerId;
     }
 
     // state : 조리 시작

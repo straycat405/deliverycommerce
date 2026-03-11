@@ -6,6 +6,8 @@ import com.babjo.deliverycommerce.domain.store.dto.StoreResponseDto;
 import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
+import com.babjo.deliverycommerce.domain.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -25,10 +27,18 @@ public class StoreService {
     private static final int PAGE_SIZE = 10;
 
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
 
-    public StoreService(StoreRepository storeRepository) {
+    public StoreService(StoreRepository storeRepository, UserRepository userRepository) {
         this.storeRepository = storeRepository;
+        this.userRepository = userRepository;
     }
+
+    /*
+     * 주문 가능 구역 정책
+     * 종로구 주소만 주문 가능
+     */
+    private static final String DELIVERY_AVAILABLE_GU = "종로구";
 
     /**
      * 가게 생성
@@ -37,6 +47,12 @@ public class StoreService {
      */
     public StoreResponseDto create(Long ownerId, StoreCreateRequestDto request) {
         log.info("가게 생성 요청 - ownerId={}, category={}, name={}", ownerId, request.getCategory(), request.getName());
+
+        // owner 확인
+        User owner = userRepository.findById(ownerId).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        //주문 가능 구역 검증(종로구만)
+        validateDeliveryArea(request.getAddress());
 
         Store store = Store.create(
                 ownerId,
@@ -79,6 +95,8 @@ public class StoreService {
                 request.getName(),
                 request.getAddress()
         );
+
+        validateDeliveryArea(store.getAddress());
 
         log.info("가게 수정 완료 - storeId={}, actorUserId={}, updatedName={}",  store.getStoreId(), actorUserId, store.getName());
         return StoreResponseDto.from(store);
@@ -184,5 +202,11 @@ public class StoreService {
         return stores.stream()
                 .map(store -> StoreListResponseDto.from(store))
                 .toList();
+    }
+
+    private void validateDeliveryArea(String address) {
+        if (address == null || address.isBlank() || !address.contains(DELIVERY_AVAILABLE_GU)) {
+            throw new CustomException(ErrorCode.STORE_ADDRESS_NOT_SUPPORTED);
+        }
     }
 }

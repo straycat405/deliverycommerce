@@ -7,9 +7,13 @@ import com.babjo.deliverycommerce.domain.store.dto.StoreUpdateRequestDto;
 import com.babjo.deliverycommerce.domain.store.entity.Store;
 import com.babjo.deliverycommerce.domain.store.repository.StoreRepository;
 import com.babjo.deliverycommerce.domain.store.service.StoreService;
+import com.babjo.deliverycommerce.domain.user.entity.User;
+import com.babjo.deliverycommerce.domain.user.repository.UserRepository;
+import com.babjo.deliverycommerce.global.common.enums.UserEnumRole;
 import com.babjo.deliverycommerce.global.exception.CustomException;
 import com.babjo.deliverycommerce.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +23,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +32,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 class StoreServiceTest {
@@ -34,8 +40,126 @@ class StoreServiceTest {
     @Mock
     private StoreRepository storeRepository;
 
+    @Mock
+    UserRepository userRepository;
+
     @InjectMocks
     private StoreService storeService;
+
+    @Nested
+    @DisplayName("가게 생성 - 종로구 주문 가능 정책")
+    class Create {
+
+        @Test
+        @DisplayName("주소가 종로구이면 생성 성공")
+        void 종로구_생성() throws Exception {
+            //given
+            Long ownerId = 1L;
+
+            User owner = User.createForTest(ownerId, "owner1", "owner1@test.com", "사장님", UserEnumRole.OWNER);
+
+            given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+
+            StoreCreateRequestDto request = new StoreCreateRequestDto();
+            setField(request, "category", "한식");
+            setField(request, "name", "한식당");
+            setField(request, "address", "서울특별시 종로구 청계천로 1");
+
+            Store saved = Store.create(ownerId, "한식", "한식당", "서울특별시 종로구 청계천로 1");
+            given(storeRepository.save(any(Store.class))).willReturn(saved);
+
+            //when
+            StoreResponseDto result = storeService.create(ownerId, request);
+
+            //then
+            assertThat(result).isNotNull();
+            assertThat(result.getAddress()).contains("종로구");
+            then(storeRepository).should().save(any(Store.class));
+
+        }
+
+        @Test
+        @DisplayName("주소가 종로구가 아니면 STORE_ADDRESS_NOT_SUPPORTED")
+        void 종로구_아닐시_실패() throws Exception {
+            //given
+            Long ownerId = 1L;
+
+            User owner = User.createForTest(ownerId, "owner1", "owner1@test.com", "사장님", UserEnumRole.OWNER);
+            given(userRepository.findById(ownerId)).willReturn(Optional.of(owner));
+
+            StoreCreateRequestDto request = new StoreCreateRequestDto();
+            setField(request, "category", "한식");
+            setField(request, "name", "한식당");
+            setField(request, "address", "서울특별시 강남구 테헤란로 1");
+
+            //when & then
+            assertThatThrownBy(() -> storeService.create(ownerId, request))
+                    .isInstanceOf(CustomException.class)
+                    .satisfies(ex -> {
+                        CustomException ce = (CustomException) ex;
+                        assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.STORE_ADDRESS_NOT_SUPPORTED);
+                    });
+
+            then(storeRepository).shouldHaveNoInteractions();
+        }
+    }
+
+    @Nested
+    @DisplayName("가게 수정 종로구 주문 가능 정책")
+    class Update {
+
+        @Test
+        @DisplayName("수정 후 주소가 종로구이면 성공")
+        void 수정주소_종로() throws Exception {
+            //given
+            Long ownerId = 1L;
+            UUID storeId = UUID.randomUUID();
+
+            Store store = Store.create(ownerId, "한식", "기존가게", "서울특별시 강남구 테헤란로 1");
+            setField(store, "storeId", storeId);
+
+            given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(store));
+
+            StoreUpdateRequestDto request = new StoreUpdateRequestDto();
+            setField(request, "category", "한식");
+            setField(request, "name", "한식당");
+            setField(request, "address", "서울특별시 종로구 새주소 1");
+
+            //when
+            StoreResponseDto result = storeService.update(storeId, ownerId, request);
+
+            //then
+            assertThat(result).isNotNull();
+            assertThat(result.getAddress()).contains("종로구");
+        }
+
+        @Test
+        @DisplayName("수정 후 주소가 종로구가 아니면 STORE_ADDRESS_NOT_SUPPORTED")
+        void 수정후_종로구_아닐시_실패() throws Exception {
+            //givne
+            Long ownerId = 1L;
+            UUID storeId = UUID.randomUUID();
+
+            Store store = Store.create(ownerId, "한식", "기존가게", "서울특별시 종로구 기존주소 1");
+            setField(store, "storeId", storeId);
+
+            given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(store));
+
+            StoreUpdateRequestDto request = new StoreUpdateRequestDto();
+            setField(request, "category", "한식");
+            setField(request, "name", "한식당");
+            setField(request, "address", "서울특별시 강남구 테해란로 1");
+
+            //when & then
+            assertThatThrownBy(() -> storeService.update(storeId, ownerId, request))
+                    .isInstanceOf(CustomException.class)
+                    .satisfies(ex -> {
+                        CustomException ce = (CustomException) ex;
+                        assertThat(ce.getErrorCode()).isEqualTo(ErrorCode.STORE_ADDRESS_NOT_SUPPORTED);
+                    });
+        }
+    }
+
 
     @Test
     @DisplayName("존재하지 않는 가게를 조회하면 STORE_NOT_FOUND 예외가 발생한다")
@@ -115,11 +239,21 @@ class StoreServiceTest {
         //given
         Long ownerId = 1L;
 
+        User owner = User.createForTest(
+                ownerId,
+                "owner1",
+                "owner1@test.com",
+                "사장님",
+                UserEnumRole.OWNER
+        );
+
         StoreCreateRequestDto request = new StoreCreateRequestDto(
                 "KOREAN",
                 "밥집",
-                "서울시 강남구"
+                "서울시 종로구"
         );
+        given(userRepository.findById(ownerId))
+                .willReturn(Optional.of(owner));
 
         Store saveStore = Store.create(
                 ownerId,
@@ -137,7 +271,7 @@ class StoreServiceTest {
         //then
         assertThat(response.getCategory()).isEqualTo("KOREAN");
         assertThat(response.getName()).isEqualTo("밥집");
-        assertThat(response.getAddress()).isEqualTo("서울시 강남구");
+        assertThat(response.getAddress()).isEqualTo("서울시 종로구");
     }
 
     @Test
@@ -261,4 +395,14 @@ class StoreServiceTest {
         assertThat(response.get(0).getName()).contains("치킨");
         assertThat(response.get(1).getName()).contains("치킨");
     }
+
+    private static void setField(Object target, String fieldName, Object value) throws Exception {
+        try {
+            var f = target.getClass().getDeclaredField(fieldName);
+            f.setAccessible(true);
+            f.set(target, value);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("setField 실패: " + target.getClass().getSimpleName() + "." + fieldName, e);
+        }
+       }
 }

@@ -54,7 +54,7 @@ public class StoreController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "생성 성공"),
-            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패"),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패 / 주문 가능 구역 정책 위반"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음(OWNER 아님)")
     })
@@ -116,7 +116,7 @@ public class StoreController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "수정 성공"),
-            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패"),
+            @ApiResponse(responseCode = "400", description = "요청 값 검증 실패 / 주문 가능 구역 정책 위반"),
             @ApiResponse(responseCode = "401", description = "인증 실패"),
             @ApiResponse(responseCode = "403", description = "권한 없음(OWNER 아님)"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 가게")

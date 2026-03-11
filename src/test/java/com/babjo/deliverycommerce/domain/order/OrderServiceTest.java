@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -159,7 +160,7 @@ public class OrderServiceTest {
 
         OrderRequestDto.AcceptOrder request = new OrderRequestDto.AcceptOrder(30);
 
-        OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request);
+        OrderResponseDto.OrderAction result = orderService.acceptOrder(orderId, ownerId, request.getCookingMinutes());
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.ACCEPTED);
         assertThat(order.getCookingMinutes()).isEqualTo(30);
@@ -186,9 +187,79 @@ public class OrderServiceTest {
         given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
                 .willReturn(Optional.of(mockStore));
 
-        assertThatThrownBy(() -> orderService.acceptOrder(orderId, fakeOwnerId, new OrderRequestDto.AcceptOrder(30)))
+        assertThatThrownBy(() -> orderService.acceptOrder(orderId, fakeOwnerId, 30))
                 .isInstanceOf(CustomException.class)
                 .hasMessageContaining("해당 가게에 대한 권한이 없습니다.");
+    }
+
+    @Test
+    @DisplayName("주문 거절 성공 - 사장님이 거절 사유와 함께 거절")
+    void rejectOrder_success() {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 100L;
+        String reason = "재료 소진으로 인한 주문 불가";
+
+        Order order = spy(Order.createOrder(1L, storeId, "인천", "없음", List.of()));
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId)).willReturn(Optional.of(mockStore));
+
+        orderService.rejectOrder(orderId, ownerId, reason);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED);
+        assertThat(order.getCancelReason()).isEqualTo(reason);
+        assertThat(order.getCanceledBy()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("사장님 주문 중도 취소 성공 - 접수 또는 조리 중 상태")
+    void cancelOrderByOwner_success() {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 100L;
+        String reason = "재료 품질 저하로 인한 조리 불가";
+
+        Order order = spy(Order.createOrder(1L, storeId, "인천시", "없음", List.of()));
+        order.accept(ownerId, 30);
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
+                .willReturn(Optional.of(mockStore));
+
+        orderService.cancelOrderByOwner(orderId, ownerId, reason);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELED);
+        assertThat(order.getCancelReason()).contains(reason);
+        assertThat(order.getCanceledBy()).isEqualTo(ownerId);
+    }
+
+    @Test
+    @DisplayName("사장님 주문 중도 취소 실패 - 이미 배달 준비 완료된 경우")
+    void cancelOrderByOwner_fail_invalidStatus() {
+        UUID orderId = UUID.randomUUID();
+        UUID storeId = UUID.randomUUID();
+        Long ownerId = 100L;
+
+        Order order = spy(Order.createOrder(1L, storeId, "서울시", "조심", List.of()));
+
+        ReflectionTestUtils.setField(order, "status", OrderStatus.PICKED_UP);
+
+        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+        Store mockStore = mock(Store.class);
+        given(mockStore.getOwnerId()).willReturn(ownerId);
+        given(storeRepository.findByStoreIdAndDeletedAtIsNull(storeId))
+                .willReturn(Optional.of(mockStore));
+
+        assertThatThrownBy(() -> orderService.cancelOrderByOwner(orderId, ownerId, "취소사유"))
+                .isInstanceOf(CustomException.class)
+                .hasMessageContaining("현재 주문 상태에서는 수행할 수 없는 작업입니다.");
     }
 
     @Test
